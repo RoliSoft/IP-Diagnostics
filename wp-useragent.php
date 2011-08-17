@@ -3,7 +3,7 @@
 Plugin Name: WP-UserAgent
 Plugin URI: http://kyleabaker.com/goodies/coding/wp-useragent/
 Description: A simple User-Agent detection plugin that lets you easily insert icons and/or textual web browser and operating system details with each comment.
-Version: 0.10.6
+Version: 0.10.8
 Author: Kyle Baker
 Author URI: http://kyleabaker.com/
 //Author: Fernando Briano
@@ -32,13 +32,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 function detect_browser_version($title){
 	//fix for Opera's (and others) UA string changes in v10.00
 	$start=$title;
-	if(strtolower($title)==strtolower("Opera") && preg_match('/Version/i', $_SERVER['HTTP_USER_AGENT']))
+	if((strtolower($title)==strtolower("Opera") || strtolower($title)==strtolower("Opera Next")) && preg_match('/Version/i', $_SERVER['HTTP_USER_AGENT']))
 		$start="Version";
 	elseif(strtolower($title)==strtolower("Opera Mobi") && preg_match('/Version/i', $_SERVER['HTTP_USER_AGENT']))
 		$start="Version";
 	elseif(strtolower($title)==strtolower("Safari") && preg_match('/Version/i', $_SERVER['HTTP_USER_AGENT']))
 		$start="Version";
 	elseif(strtolower($title)==strtolower("Pre") && preg_match('/Version/i', $_SERVER['HTTP_USER_AGENT']))
+		$start="Version";
+	elseif(strtolower($title)==strtolower("Android Webkit"))
 		$start="Version";
 	elseif(strtolower($title)==strtolower("Links"))
 		$start="Links (";
@@ -505,6 +507,10 @@ function detect_webbrowser(){
 		$link="http://www.mozilla.org/projects/minefield/";
 		$title=detect_browser_version("Minefield");
 		$code="minefield";
+	}elseif(preg_match('/MiniBrowser/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://dmkho.tripod.com/";
+		$title=detect_browser_version("MiniBrowser");
+		$code="minibrowser";
 	}elseif(preg_match('/Minimo/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www-archive.mozilla.org/projects/minimo/";
 		$title=detect_browser_version("Minimo");
@@ -597,6 +603,10 @@ function detect_webbrowser(){
 		$link="http://www.opera.com/mobile/";
 		$title=detect_browser_version("Opera Mobi");
 		$code="opera-2";
+	}elseif(preg_match('/Opera Next/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://www.opera.com/support/kb/view/991/";
+		$title=detect_browser_version("Opera Next");
+		$code="opera-next";
 	}elseif(preg_match('/Opera/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.opera.com/";
 		$title=detect_browser_version("Opera");
@@ -827,6 +837,10 @@ function detect_webbrowser(){
 		$link="http://w3m.sourceforge.net/";
 		$title=detect_browser_version("W3M");
 		$code="w3m";
+	}elseif(preg_match('/AppleWebkitBrowser/i', $_SERVER['HTTP_USER_AGENT']) && preg_match('/Android/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://developer.android.com/reference/android/webkit/package-summary.html";
+		$title=detect_browser_version("Android Webkit");
+		$code="android-webkit";
 	}elseif(preg_match('/WeltweitimnetzBrowser/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://weltweitimnetz.de/software/Browser.en.page";
 		$title="Weltweitimnetz ".detect_browser_version("Browser");
@@ -1013,6 +1027,14 @@ function detect_device(){
 			$title.=str_replace("_", " ", $regmatch[1]);
 		}
 		$code="htc";
+
+	//Kindle
+	}elseif(preg_match('/Kindle/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://en.wikipedia.org/wiki/Amazon_Kindle";
+		$title="Kindle";
+		if(preg_match('/Kindle\/([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
+			$title.=" ".$regmatch[1];
+		$code="kindle";
 
 	//LG
 	}elseif(preg_match('/LG/i', $_SERVER['HTTP_USER_AGENT'])){
@@ -1282,6 +1304,12 @@ function detect_os(){
 		if(preg_match('/mdv([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
 			$title.=" ".$regmatch[1];
 		$code="mandriva";
+	}elseif(preg_match('/moonOS/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://www.moonos.org/";
+		$title="moonOS";
+		if(preg_match('/moonOS\/([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
+			$title.=" ".$regmatch[1];
+		$code="moonos";
 	}elseif(preg_match('/MorphOS/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.morphos-team.net/";
 		$title="MorphOS";

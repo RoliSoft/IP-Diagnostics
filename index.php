@@ -46,7 +46,7 @@ print '<style>*{margin:0}.c{font-family:Cambria;width:100%;height:170px;text-ali
 include 'wp-useragent.php';
 include 'geoipcity.inc';
 include 'geoipregionvars.php';
-$gi = geoip_open('GeoLiteCity.dat', GEOIP_STANDARD);
+$gi = geoip_open('GeoIPCity.dat', GEOIP_STANDARD);
 
 print '<div class="c">';
 print '<h1>';
@@ -66,8 +66,17 @@ print '<h1>';
 print '</h1>';
 
 print '<h2>';
-	print gethostbyaddrc($addr);
-	if($proxy) print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:-3px" title="X-Forwarded-For" /> '.gethostbyaddrc($proxy);
+	$host = gethostbyaddrc($addr);
+	if($host == $addr) $host = revaddr($addr).'.in-addr.arpa';
+	
+	print '<span class="host">'.$host.'</span>';
+	
+	if($proxy){
+		$prhost = gethostbyaddrc($proxy);
+		if($prhost == $proxy) $prhost = revaddr($proxy).'.in-addr.arpa';
+		
+		print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:-3px" class="xforwardedfor" title="X-Forwarded-For" /> <span class="host">'.$prhost.'</span>';
+	}
 print '</h2><br />';
 
 print '<h2>';
@@ -100,8 +109,7 @@ function ucwords2($words){
 }
 
 function revaddr($ip){
-	$ip = explode('.', $ip);
-	return $ip[3].'.'.$ip[2].'.'.$ip[1].'.'.$ip[0];
+	return implode('.', array_reverse(explode('.', $ip)));
 }
 
 function inet6_expand($addr){
@@ -147,26 +155,26 @@ function process_ip($addr, $xfwd = false){
 	if(!$tr && !$op && !$pl && $xfwd) $ret .= '<img src="/browser/other/proxy.png" title="Proxy detected" style="margin-bottom:-4px" /> ';
 	if(!$tr && !$op && !$pl && !$v6 && !$xfwd) $ret .= ($pr = is_proxy_db($addr)) == 1 ? '<img src="/browser/other/proxy.png" title="Anonymous proxy detected" style="margin-bottom:-4px" /> ' : '';
 	if(!$tr && !$op && !$pl && !$v6 && !$xfwd && $pr == -1) $ret .= is_proxy($addr);
-	$ret .= $addr;
+	$ret .= '<span class="ip">'.$addr.'</span>';
 	
 	return $ret;
 }
 
 function is_tor($addr){
 	if(substr_count($addr, '.') != 0 && gethostbynamec(revaddr($addr).'.'.$_SERVER['SERVER_PORT'].'.'.revaddr($_SERVER['SERVER_ADDR']).'.ip-port.exitlist.torproject.org') == '127.0.0.2'){
-		return '<img src="/browser/other/tor.png" title="TOR exit node" style="margin-bottom:-4px" /> ';
+		return '<img src="/browser/other/tor.png" title="TOR exit node" class="tor" style="margin-bottom:-4px" /> ';
 	}
 }
 
 function is_opturbo($addr){
 	if(substr(gethostbyaddrc($addr), -15) == '.opera-mini.net'){
-		return '<img src="/browser/other/turbo.png" style="margin-bottom:-5px" title="Opera Turbo proxy" /> ';
+		return '<img src="/browser/other/turbo.png" style="margin-bottom:-5px" class="operaturbo" title="Opera Turbo proxy" /> ';
 	}
 }
 
 function is_planetlab($addr){
 	if(preg_match('/^planet(?:lab)?\d+\./i', gethostbyaddrc($addr))){
-		return '<img src="/browser/other/planetlab.jpg" style="margin-bottom:-5px" title="PlanetLab proxy" /> ';
+		return '<img src="/browser/other/planetlab.jpg" style="margin-bottom:-5px" class="planetlab" title="PlanetLab proxy" /> ';
 	}
 }
 
@@ -189,11 +197,13 @@ function lookup_ip($addr){
 	$ip = geoip_record_by_addr($gi, $addr);
 	
 	if(file_exists('flags/'.strtolower($ip->country_code).'.png')) $flag = '<img src="/browser/flags/'.strtolower($ip->country_code).'.png" style="margin-bottom:-3px" title="'.$ip->country_name.'" /> ';
-	$ip = $flag.$ip->country_name.', '.ucwords2($GEOIP_REGION_NAME[$ip->country_code][$ip->region]).', '.ucwords2($ip->city);
+	$ip = $ip->country_name.', '.ucwords2($GEOIP_REGION_NAME[$ip->country_code][$ip->region]).', '.ucwords2($ip->city);
 	$ip = rtrim($ip, ' ,');
 	
+	if(!empty($ip)) $ip = $flag.'<span class="geoip">'.$ip.'</span>';
+	
 	if(!$s2 && empty($ip)){
-		$s2   = true;
+		$s2 = true;
 		
 		$host = gethostbyaddrc($addr);
 		$v6 = is_ipv6($addr);
@@ -205,7 +215,7 @@ function lookup_ip($addr){
 		if(!$v6 && $host != $ip2){
 			$addr = $ip2;
 		} else {
-			if(preg_match('/^(?:\w+:\/\/)?[^:?#\/\s]*?([^.\s]+\.(?:[a-z]{2,}|co\.uk|org\.uk|ac\.uk|org\.au|com\.au|___etc___))(?:[:?#\/]|$)/i', $host, $m)){
+			if(preg_match('/^(?:\w+:\/\/)?[^:?#\/\s]*?([^.\s]+\.(?:[a-z]{2,}|co\.uk|org\.uk|ac\.uk|org\.au|com\.au))(?:[:?#\/]|$)/i', $host, $m)){
 				if($m[1]){
 					$ip2 = gethostbynamec($m[1]);
 					
@@ -223,7 +233,7 @@ function lookup_ip($addr){
 		goto lookup;
 	}
 	
-	if(empty($ip)) $ip = ' <img src="/browser/browsers/null.png" title="GeoIP lookup failed" style="margin-bottom:-4px" /> <span style="color:gray">Reserved</span>';
+	if(empty($ip)) $ip = ' <img src="/browser/browsers/null.png" title="GeoIP lookup failed" style="margin-bottom:-4px" /> <span class="geoip" style="color:gray">Reserved</span>';
 	
 	return $ip;
 }
