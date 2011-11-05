@@ -56,7 +56,7 @@ if(!empty($_GET['is_proxy'])){
 //$_SERVER['REMOTE_ADDR'] = '79.119.213.42';
 //$_SERVER['REMOTE_ADDR'] = '2002:4f77:d54e::4f77:d54e';
 //$_SERVER['REMOTE_ADDR'] = '2607:f298:1:105::8d8:796c';
-$_SERVER['REMOTE_ADDR'] = '2a02:2f02:9021:f00d::567d:bf36';
+//$_SERVER['REMOTE_ADDR'] = '2a02:2f02:9021:f00d::567d:bf36';
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '69.163.231.16';
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '2002:0:0:0:0:0:d9d4:e60e';
 
@@ -238,7 +238,7 @@ function lookup_ip($addr, $idx = 0){
 	$s2 = false;
 	
    lookup:
-	if(!$v6){
+	if($v6){
 		$ip = geoip_record_by_addr_v6($gi6, $addr);
 	} else {
 		$ip = geoip_record_by_addr($gi, $addr);
