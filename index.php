@@ -31,6 +31,7 @@ if(!empty($_GET['is_proxy'])){
 //$_SERVER['REMOTE_ADDR'] = '79.119.213.42';
 //$_SERVER['REMOTE_ADDR'] = '2002:4f77:d54e::4f77:d54e';
 //$_SERVER['REMOTE_ADDR'] = '2607:f298:1:105::8d8:796c';
+$_SERVER['REMOTE_ADDR'] = '2a02:2f02:9021:f00d::567d:bf36';
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '69.163.231.16';
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '2002:0:0:0:0:0:d9d4:e60e';
 
@@ -41,12 +42,14 @@ if(!$proxy && $_SERVER['HTTP_VIA'] && preg_match('/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d
 if($_SERVER['HTTP_CLIENT_IP']) $proxy = $_SERVER['HTTP_CLIENT_IP'];
 if($_SERVER['HTTP_X_CODEMUX_CLIENT']) $proxy = $_SERVER['HTTP_X_CODEMUX_CLIENT'];
 
-print '<style>*{margin:0}.c{font-family:Cambria;width:100%;height:170px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto;}</style>';
+print '<style>*{margin:0}.c{font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto;}</style>';
 
 include 'wp-useragent.php';
 include 'geoipcity.inc';
 include 'geoipregionvars.php';
-$gi = geoip_open('GeoIPCity.dat', GEOIP_STANDARD);
+$gi  = geoip_open('GeoIPCity.dat', GEOIP_STANDARD);
+$gi2 = geoip_open('GeoIPOrg.dat', GEOIP_STANDARD);
+$gi6 = geoip_open('GeoLiteCityv6.dat', GEOIP_STANDARD);
 
 print '<div class="c">';
 print '<h1>';
@@ -67,15 +70,23 @@ print '</h1>';
 
 print '<h2>';
 	$host = gethostbyaddrc($addr);
-	if($host == $addr) $host = revaddr($addr).'.in-addr.arpa';
+	if($host == $addr) $uhost = $host = revaddr($addr, true);
 	
-	print '<span class="host">'.$host.'</span>';
+	print '<span class="host"'.($uhost?' style="color:gray"':'').'>'.$host.'</span>';
 	
 	if($proxy){
 		$prhost = gethostbyaddrc($proxy);
-		if($prhost == $proxy) $prhost = revaddr($proxy).'.in-addr.arpa';
+		if($prhost == $proxy) $uprhost = $prhost = revaddr($proxy, true);
 		
-		print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:-3px" class="xforwardedfor" title="X-Forwarded-For" /> <span class="host">'.$prhost.'</span>';
+		print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:-3px" class="xforwardedfor" title="X-Forwarded-For" /> <span class="host"'.($uprhost?' style="color:gray"':'').'>'.$prhost.'</span>';
+	}
+print '</h2><br />';
+
+print '<h2>';
+	print lookup_isp($addr);
+	
+	if($proxy){
+		print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:-3px" class="xforwardedfor" title="X-Forwarded-For" /> '.lookup_isp($proxy);
 	}
 print '</h2><br />';
 
@@ -108,8 +119,13 @@ function ucwords2($words){
     return $words;
 }
 
-function revaddr($ip){
-	return implode('.', array_reverse(explode('.', $ip)));
+function revaddr($ip, $arpa = false){
+	if(is_ipv6($ip)){
+		$ip = str_replace(':', null, inet6_expand($ip));
+		return implode('.', array_reverse(explode('.', trim(chunk_split($ip, 1, '.'), '.')))).($arpa?'.ip6.arpa':'');
+	} else {
+		return implode('.', array_reverse(explode('.', $ip))).($arpa?'.in-addr.arpa':'');
+	}
 }
 
 function inet6_expand($addr){
@@ -189,12 +205,17 @@ function is_ipv6($addr){
 }
 
 function lookup_ip($addr){
-	global $gi, $GEOIP_REGION_NAME;
+	global $gi, $gi6, $GEOIP_REGION_NAME;
 	
+	$v6 = is_ipv6($addr);
 	$s2 = false;
 	
    lookup:
-	$ip = geoip_record_by_addr($gi, $addr);
+	if($v6){
+		$ip = geoip_record_by_addr_v6($gi6, $addr);
+	} else {
+		$ip = geoip_record_by_addr($gi, $addr);
+	}
 	
 	if(file_exists('flags/'.strtolower($ip->country_code).'.png')) $flag = '<img src="/browser/flags/'.strtolower($ip->country_code).'.png" style="margin-bottom:-3px" title="'.$ip->country_name.'" /> ';
 	$ip = $ip->country_name.', '.ucwords2($GEOIP_REGION_NAME[$ip->country_code][$ip->region]).', '.ucwords2($ip->city);
@@ -203,6 +224,51 @@ function lookup_ip($addr){
 	if(!empty($ip)) $ip = $flag.'<span class="geoip">'.$ip.'</span>';
 	
 	if(!$s2 && empty($ip)){
+		$s2 = true;
+		
+		$host = gethostbyaddrc($addr);
+		
+		if(!$v6){
+			$ip2  = gethostbynamec($host);
+		}
+		
+		if(!$v6 && $host != $ip2){
+			$addr = $ip2;
+		} else {
+			if(preg_match('/^(?:\w+:\/\/)?[^:?#\/\s]*?([^.\s]+\.(?:[a-z]{2,}|co\.uk|org\.uk|ac\.uk|org\.au|com\.au))(?:[:?#\/]|$)/i', $host, $m)){
+				if($m[1]){
+					$ip2 = gethostbynamec($m[1]);
+					
+					if($ip2 != $m[1]){
+						$addr = $ip2;
+					} else {
+						break;
+					}
+				} else {
+					break;
+				}
+			}
+		}
+		
+		goto lookup;
+	}
+	
+	if(empty($ip)) $ip = ' <img src="/browser/browsers/null.png" title="GeoIP lookup failed" style="margin-bottom:-4px" /> <span class="geoip" style="color:gray">Reserved</span>';
+	
+	return $ip;
+}
+
+function lookup_isp($addr){
+	global $gi2;
+	
+	$s2 = false;
+	
+   lookup:
+	$isp = geoip_name_by_addr($gi2, $addr);
+	
+	if(!empty($isp)) $isp = '<span class="isp">'.$isp.'</span>';
+	
+	if(!$s2 && empty($isp)){
 		$s2 = true;
 		
 		$host = gethostbyaddrc($addr);
@@ -233,9 +299,9 @@ function lookup_ip($addr){
 		goto lookup;
 	}
 	
-	if(empty($ip)) $ip = ' <img src="/browser/browsers/null.png" title="GeoIP lookup failed" style="margin-bottom:-4px" /> <span class="geoip" style="color:gray">Reserved</span>';
+	if(empty($isp)) $isp = '<span class="isp" style="color:gray">Unknown ISP</span>';
 	
-	return $ip;
+	return $isp;
 }
 
 function gethostbyaddrc($addr){
