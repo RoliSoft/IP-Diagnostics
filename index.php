@@ -1,6 +1,31 @@
 <?php
 header('Content-Type: text/html; charset=UTF-8');
 
+if(!empty($_GET['whois'])){
+	$chip  = inet_ntop(base64_decode($_GET['whois']));
+	$whois = @whois($chip);
+	
+	if($whois['country'][0]) $country = $whois['country'][0];
+	if($whois['org-name'][0]) $isp = $whois['org-name'][0];
+	if(!$isp && $whois['orgname'][0]) $isp = $whois['orgname'][0];
+	
+	if($country){
+		include 'geoip.inc';
+		$gi = new GeoIP();
+		$cname = $gi->GEOIP_COUNTRY_NAMES[$gi->GEOIP_COUNTRY_CODE_TO_NUMBER[strtoupper(trim($country))]];
+	}
+	
+	if(isset($_GET['isp']) && $isp){
+		print 'document.getElementsByClassName(\'isp\')['.((int)$_GET['isp']).'].innerHTML=\''.$isp.'\';';
+	}
+	
+	if(isset($_GET['geoip']) && $cname){
+		print 'document.getElementsByClassName(\'geoip\')['.((int)$_GET['geoip']).'].innerHTML=\''.$cname.'\';var a=document.getElementsByClassName(\'flag\')['.((int)$_GET['geoip']).'];a.src=\'/browser/flags/'.strtolower($country).'.png\';a.title=\''.$cname.'\';document.title=document.title.replace(\'GeoIP: Reserved\', \'GeoIP: '.$cname.'\');';
+	}
+	
+	die();
+}
+
 if(!empty($_GET['is_proxy'])){
 	$prst = 'document.write(\'<img src="http://rolisoft.net/browser/other/proxy.png" title="Anonymous proxy detected" style="margin-bottom:-4px" /> \')';
 	$chip = inet_ntop(base64_decode($_GET['is_proxy']));
@@ -86,13 +111,13 @@ print '<h2>';
 	print lookup_isp($addr);
 	
 	if($proxy){
-		print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:-3px" class="xforwardedfor" title="X-Forwarded-For" /> '.lookup_isp($proxy);
+		print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:-3px" class="xforwardedfor" title="X-Forwarded-For" /> '.lookup_isp($proxy, 1);
 	}
 print '</h2><br />';
 
 print '<h2>';
 	print $geoip = lookup_ip($addr);
-	if($proxy) print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:-3px" title="X-Forwarded-For" /> '.lookup_ip($proxy);
+	if($proxy) print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:-3px" title="X-Forwarded-For" /> '.lookup_ip($proxy, 1);
 print '</h2><br />';
 
 print '<h3>';
@@ -103,6 +128,7 @@ print '</h3>';
 print '</div>';
 
 print '<title>IP: '.$addr.', GeoIP: '.trim(strip_tags($geoip)).'</title>';
+print $scripts;
 
 geoip_close($gi);
 
@@ -195,7 +221,8 @@ function is_planetlab($addr){
 }
 
 function is_proxy($addr){
-	return '<script src="/browser/?is_proxy='.urlencode(rtrim(base64_encode(inet_pton($addr)), '=')).'"></script>';
+	global $scripts;
+	$scripts .= '<script defer src="/browser/?is_proxy='.urlencode(rtrim(base64_encode(inet_pton($addr)), '=')).'"></script>';
 }
 
 function is_ipv6($addr){
@@ -204,20 +231,20 @@ function is_ipv6($addr){
 	}
 }
 
-function lookup_ip($addr){
-	global $gi, $gi6, $GEOIP_REGION_NAME;
+function lookup_ip($addr, $idx = 0){
+	global $gi, $gi6, $GEOIP_REGION_NAME, $scripts;
 	
 	$v6 = is_ipv6($addr);
 	$s2 = false;
 	
    lookup:
-	if($v6){
+	if(!$v6){
 		$ip = geoip_record_by_addr_v6($gi6, $addr);
 	} else {
 		$ip = geoip_record_by_addr($gi, $addr);
 	}
 	
-	if(file_exists('flags/'.strtolower($ip->country_code).'.png')) $flag = '<img src="/browser/flags/'.strtolower($ip->country_code).'.png" style="margin-bottom:-3px" title="'.$ip->country_name.'" /> ';
+	if(file_exists('flags/'.strtolower($ip->country_code).'.png')) $flag = '<img class="flag" src="/browser/flags/'.strtolower($ip->country_code).'.png" style="margin-bottom:-3px" title="'.$ip->country_name.'" /> ';
 	$ip = $ip->country_name.', '.ucwords2($GEOIP_REGION_NAME[$ip->country_code][$ip->region]).', '.ucwords2($ip->city);
 	$ip = rtrim($ip, ' ,');
 	
@@ -253,14 +280,25 @@ function lookup_ip($addr){
 		goto lookup;
 	}
 	
-	if(empty($ip)) $ip = ' <img src="/browser/browsers/null.png" title="GeoIP lookup failed" style="margin-bottom:-4px" /> <span class="geoip" style="color:gray">Reserved</span>';
+	if(empty($ip)){	
+		$ip = ' <img class="flag" src="/browser/browsers/null.png" title="GeoIP lookup failed" style="margin-bottom:-4px" /> <span class="geoip"><span style="color:gray">Reserved</span></span>';
+		if($v6){
+			$param = '?whois='.urlencode(rtrim(base64_encode(inet_pton($addr)), '='));
+			if(strstr($scripts, $param) != -1){
+				$scripts = str_replace($param, $param.'&geoip='.$idx, $scripts);
+			} else {
+				$scripts .= '<script defer src="/browser/'.$param.'&geoip='.$idx.'"></script>';
+			}
+		}
+	}
 	
 	return $ip;
 }
 
-function lookup_isp($addr){
-	global $gi2;
+function lookup_isp($addr, $idx = 0){
+	global $gi2, $scripts;
 	
+	$v6 = is_ipv6($addr);
 	$s2 = false;
 	
    lookup:
@@ -272,7 +310,6 @@ function lookup_isp($addr){
 		$s2 = true;
 		
 		$host = gethostbyaddrc($addr);
-		$v6 = is_ipv6($addr);
 		
 		if(!$v6){
 			$ip2  = gethostbynamec($host);
@@ -299,7 +336,10 @@ function lookup_isp($addr){
 		goto lookup;
 	}
 	
-	if(empty($isp)) $isp = '<span class="isp" style="color:gray">Unknown ISP</span>';
+	if(empty($isp)){
+		$isp = '<span class="isp"><span style="color:gray">Unknown ISP</span></span>';
+		if($v6) $scripts .= '<script defer src="/browser/?whois='.urlencode(rtrim(base64_encode(inet_pton($addr)), '=')).'&isp='.$idx.'"></script>';
+	}
 	
 	return $isp;
 }
@@ -332,6 +372,31 @@ function gethostbynamee($host){
 	} else {
 		return $host;
 	}
+}
+
+function whois($ip) {
+    $fp = @fsockopen('whois.lacnic.net', 43, $errno, $errstr, 10) or die("Socket Error " . $errno . " - " . $errstr);
+    fputs($fp, $ip."\r\n");
+	
+    $out = '';
+    while(!feof($fp)){
+        $out .= fgets($fp);
+    }
+    fclose($fp);
+
+    $res = array();
+    if((strpos(strtolower($out), 'error') === FALSE) && (strpos(strtolower($out), 'not allocated') === FALSE)) {
+        $rows = explode("\n", $out);
+        foreach($rows as $row) {
+            $row = trim($row);
+            if(($row != '') && ($row{0} != '#') && ($row{0} != '%')) {
+                list($key, $value) = explode(':', $row, 2);
+				$res[strtolower($key)][] = trim($value);
+            }
+        }
+    }
+	
+    return $res;
 }
 
 function is_proxy_db($addr){
