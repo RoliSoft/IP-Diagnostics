@@ -27,7 +27,7 @@ if(!empty($_GET['whois'])){
 }
 
 if(!empty($_GET['is_proxy'])){
-	$prst = 'document.write(\'<img src="http://rolisoft.net/browser/other/proxy.png" title="Anonymous proxy detected" style="margin-bottom:-4px" /> \')';
+	$prst = 'document.write(\'<img src="http://rolisoft.net/browser/other/proxy.png" title="Anonymous proxy detected" class="i1" /> \')';
 	$chip = inet_ntop(base64_decode($_GET['is_proxy']));
 	$ispr = is_proxy_db($chip);
 	
@@ -67,7 +67,7 @@ if(!$proxy && $_SERVER['HTTP_VIA'] && preg_match('/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d
 if($_SERVER['HTTP_CLIENT_IP']) $proxy = $_SERVER['HTTP_CLIENT_IP'];
 if($_SERVER['HTTP_X_CODEMUX_CLIENT']) $proxy = $_SERVER['HTTP_X_CODEMUX_CLIENT'];
 
-print '<style>*{margin:0}.c{font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto;}</style>';
+print '<meta name="HandheldFriendly" content="true" /><meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" /><style>*{margin:0}.c{font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto}.i1{margin-bottom:-4px}.i2{margin-bottom:-3px}.in{margin-bottom:0px}.ib{margin-bottom:-5px}@media screen and (max-width:800px){h1,h2,h3{font-size:16px !important}h2,h3{font-weight:normal}img{height:21px;width:21px;margin-bottom:-4px !important}}</style>';
 
 include 'wp-useragent.php';
 include 'geoipcity.inc';
@@ -81,14 +81,14 @@ print '<h1>';
 	print process_ip($addr, !empty($proxy));
 	if(is_ipv6($addr) && $v4 = v6to4($addr)){
 		$addr = $v4;
-		print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:0px" title="6to4 tunnel destination" /> '.process_ip($addr);
+		print ' <img src="/browser/other/arrow-s.png" class="in" title="6to4 tunnel destination" /> '.process_ip($addr);
 	}
 	
 	if(!empty($proxy)){
-		print ' <img src="/browser/other/arrow.png" style="margin-bottom:-4px" title="X-Forwarded-For" /> '.process_ip($proxy);
+		print ' <img src="/browser/other/arrow.png"  title="X-Forwarded-For" /> '.process_ip($proxy);
 		if(is_ipv6($proxy) && $v4pr = v6to4($proxy)){
 			$proxy = $v4pr;
-			print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:0px" title="6to4 tunnel destination" /> '.process_ip($proxy);
+			print ' <img src="/browser/other/arrow-s.png" class="in" title="6to4 tunnel destination" /> '.process_ip($proxy);
 		}
 	}
 print '</h1>';
@@ -103,7 +103,7 @@ print '<h2>';
 		$prhost = gethostbyaddrc($proxy);
 		if($prhost == $proxy) $uprhost = $prhost = revaddr($proxy, true);
 		
-		print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:-3px" class="xforwardedfor" title="X-Forwarded-For" /> <span class="host"'.($uprhost?' style="color:gray"':'').'>'.$prhost.'</span>';
+		print ' <img src="/browser/other/arrow-s.png" class="i2" class="xforwardedfor" title="X-Forwarded-For" /> <span class="host"'.($uprhost?' style="color:gray"':'').'>'.$prhost.'</span>';
 	}
 print '</h2><br />';
 
@@ -111,13 +111,13 @@ print '<h2>';
 	print lookup_isp($addr);
 	
 	if($proxy){
-		print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:-3px" class="xforwardedfor" title="X-Forwarded-For" /> '.lookup_isp($proxy, 1);
+		print ' <img src="/browser/other/arrow-s.png" class="i2" class="xforwardedfor" title="X-Forwarded-For" /> '.lookup_isp($proxy, 1);
 	}
 print '</h2><br />';
 
 print '<h2>';
 	print $geoip = lookup_ip($addr);
-	if($proxy) print ' <img src="/browser/other/arrow-s.png" style="margin-bottom:-3px" title="X-Forwarded-For" /> '.lookup_ip($proxy, 1);
+	if($proxy) print ' <img src="/browser/other/arrow-s.png" class="i2" title="X-Forwarded-For" /> '.lookup_ip($proxy, 1);
 print '</h2><br />';
 
 print '<h3>';
@@ -194,8 +194,8 @@ function process_ip($addr, $xfwd = false){
 	$ret .= $tr = is_tor($addr);
 	$ret .= $op = is_opturbo($addr);
 	$ret .= $pl = is_planetlab($addr);
-	if(!$tr && !$op && !$pl && $xfwd) $ret .= '<img src="/browser/other/proxy.png" title="Proxy detected" style="margin-bottom:-4px" /> ';
-	if(!$tr && !$op && !$pl && !$v6 && !$xfwd) $ret .= ($pr = is_proxy_db($addr)) == 1 ? '<img src="/browser/other/proxy.png" title="Anonymous proxy detected" style="margin-bottom:-4px" /> ' : '';
+	if(!$tr && !$op && !$pl && $xfwd) $ret .= '<img src="/browser/other/proxy.png" title="Proxy detected" class="i1" /> ';
+	if(!$tr && !$op && !$pl && !$v6 && !$xfwd) $ret .= ($pr = is_proxy_db($addr)) == 1 ? '<img src="/browser/other/proxy.png" title="Anonymous proxy detected" class="i1" /> ' : '';
 	if(!$tr && !$op && !$pl && !$v6 && !$xfwd && $pr == -1) $ret .= is_proxy($addr);
 	$ret .= '<span class="ip">'.$addr.'</span>';
 	
@@ -204,19 +204,19 @@ function process_ip($addr, $xfwd = false){
 
 function is_tor($addr){
 	if(substr_count($addr, '.') != 0 && gethostbynamec(revaddr($addr).'.'.$_SERVER['SERVER_PORT'].'.'.revaddr($_SERVER['SERVER_ADDR']).'.ip-port.exitlist.torproject.org') == '127.0.0.2'){
-		return '<img src="/browser/other/tor.png" title="TOR exit node" class="tor" style="margin-bottom:-4px" /> ';
+		return '<img src="/browser/other/tor.png" title="TOR exit node" class="tor" class="i1" /> ';
 	}
 }
 
 function is_opturbo($addr){
 	if(substr(gethostbyaddrc($addr), -15) == '.opera-mini.net'){
-		return '<img src="/browser/other/turbo.png" style="margin-bottom:-5px" class="operaturbo" title="Opera Turbo proxy" /> ';
+		return '<img src="/browser/other/turbo.png" class="ib" class="operaturbo" title="Opera Turbo proxy" /> ';
 	}
 }
 
 function is_planetlab($addr){
 	if(preg_match('/^planet(?:lab)?\d+\./i', gethostbyaddrc($addr))){
-		return '<img src="/browser/other/planetlab.jpg" style="margin-bottom:-5px" class="planetlab" title="PlanetLab proxy" /> ';
+		return '<img src="/browser/other/planetlab.jpg" class="ib" class="planetlab" title="PlanetLab proxy" /> ';
 	}
 }
 
@@ -227,7 +227,7 @@ function is_proxy($addr){
 
 function is_ipv6($addr){
 	if(substr_count($addr, ':') > 0 && substr_count($addr, '.') == 0){
-		return '<img src="/browser/other/ipv6.jpg" title="IPv6, fuck yeah!" style="margin-bottom:-4px" /> ';
+		return '<img src="/browser/other/ipv6.jpg" title="IPv6, fuck yeah!" class="i1" /> ';
 	}
 }
 
@@ -244,7 +244,7 @@ function lookup_ip($addr, $idx = 0){
 		$ip = geoip_record_by_addr($gi, $addr);
 	}
 	
-	if(file_exists('flags/'.strtolower($ip->country_code).'.png')) $flag = '<img class="flag" src="/browser/flags/'.strtolower($ip->country_code).'.png" style="margin-bottom:-3px" title="'.$ip->country_name.'" /> ';
+	if(file_exists('flags/'.strtolower($ip->country_code).'.png')) $flag = '<img class="flag" src="/browser/flags/'.strtolower($ip->country_code).'.png" class="i2" title="'.$ip->country_name.'" /> ';
 	$ip = $ip->country_name.', '.ucwords2($GEOIP_REGION_NAME[$ip->country_code][$ip->region]).', '.ucwords2($ip->city);
 	$ip = rtrim($ip, ' ,');
 	
@@ -281,7 +281,7 @@ function lookup_ip($addr, $idx = 0){
 	}
 	
 	if(empty($ip)){	
-		$ip = ' <img class="flag" src="/browser/browsers/null.png" title="GeoIP lookup failed" style="margin-bottom:-4px" /> <span class="geoip"><span style="color:gray">Reserved</span></span>';
+		$ip = ' <img class="flag" src="/browser/browsers/null.png" title="GeoIP lookup failed" class="i1" /> <span class="geoip"><span style="color:gray">Reserved</span></span>';
 		if($v6){
 			$param = '?whois='.urlencode(rtrim(base64_encode(inet_pton($addr)), '='));
 			if(strstr($scripts, $param) != -1){
