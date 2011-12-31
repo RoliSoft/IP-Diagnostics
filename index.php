@@ -27,7 +27,7 @@ if(!empty($_GET['whois'])){
 }
 
 if(!empty($_GET['is_proxy'])){
-	$prst = 'document.write(\'<img src="http://rolisoft.net/browser/other/proxy.png" title="Anonymous proxy detected" class="i1" /> \')';
+	$prst = 'document.getElementsByClassName(\'placeholder\')['.((int)$_GET['placeholder']).'].innerHTML=\'<img src="http://rolisoft.net/browser/other/proxy.png" title="Anonymous proxy detected" class="i1" /> \';';
 	$chip = inet_ntop(base64_decode($_GET['is_proxy']));
 	$ispr = is_proxy_db($chip);
 	
@@ -75,6 +75,8 @@ include 'geoipregionvars.php';
 $gi  = geoip_open('GeoIPCity.dat', GEOIP_STANDARD);
 $gi2 = geoip_open('GeoIPOrg.dat', GEOIP_STANDARD);
 $gi6 = geoip_open('GeoLiteCityv6.dat', GEOIP_STANDARD);
+
+$proxycheck = 0;
 
 print '<div class="c">';
 print '<h1>';
@@ -221,8 +223,10 @@ function is_planetlab($addr){
 }
 
 function is_proxy($addr){
-	global $scripts;
-	$scripts .= '<script defer src="/browser/?is_proxy='.urlencode(rtrim(base64_encode(inet_pton($addr)), '=')).'"></script>';
+	global $scripts, $proxycheck;
+	$scripts .= '<script defer src="/browser/?is_proxy='.urlencode(rtrim(base64_encode(inet_pton($addr)), '=')).'&placeholder='.$proxycheck.'"></script>';
+	$proxycheck++;
+	return '<span class="placeholder"></span>';
 }
 
 function is_ipv6($addr){
@@ -244,7 +248,7 @@ function lookup_ip($addr, $idx = 0){
 		$ip = geoip_record_by_addr($gi, $addr);
 	}
 	
-	if(file_exists('flags/'.strtolower($ip->country_code).'.png')) $flag = '<img class="flag" src="/browser/flags/'.strtolower($ip->country_code).'.png" class="i2" title="'.$ip->country_name.'" /> ';
+	if(file_exists('flags/'.strtolower($ip->country_code).'.png')) $flag = '<img class="flag i1" src="/browser/flags/'.strtolower($ip->country_code).'.png" title="'.$ip->country_name.'" /> ';
 	$ip = $ip->country_name.', '.ucwords2($GEOIP_REGION_NAME[$ip->country_code][$ip->region]).', '.ucwords2($ip->city);
 	$ip = rtrim($ip, ' ,');
 	
@@ -281,7 +285,7 @@ function lookup_ip($addr, $idx = 0){
 	}
 	
 	if(empty($ip)){	
-		$ip = ' <img class="flag" src="/browser/browsers/null.png" title="GeoIP lookup failed" class="i1" /> <span class="geoip"><span style="color:gray">Reserved</span></span>';
+		$ip = ' <img class="flag i1" src="/browser/browsers/null.png" title="GeoIP lookup failed" /> <span class="geoip"><span style="color:gray">Reserved</span></span>';
 		if($v6){
 			$param = '?whois='.urlencode(rtrim(base64_encode(inet_pton($addr)), '='));
 			if(strstr($scripts, $param) != -1){

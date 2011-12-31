@@ -920,7 +920,7 @@ function detect_webbrowser(){
 		return '';
 	}
 	
-	return '<img src="/browser/browsers/'.$code.'.png" title="'.$title.'" style="margin-bottom:-4px" /> ';
+	return '<img src="/browser/browsers/'.$code.'.png" title="'.$title.'" class="i1" /> ';
 }
 
 //Detect Console or Mobile Device
@@ -1153,7 +1153,7 @@ function detect_device(){
 		return "";
 	}
 	
-	return '<img src="/browser/device/'.$code.'.png" title="'.$title.'" style="margin-bottom:-4px" /> ';
+	return '<img src="/browser/device/'.$code.'.png" title="'.$title.'" class="i1" /> ';
 }
 
 //Detect Operating System
@@ -1493,7 +1493,7 @@ function detect_os(){
 		return "";
 	}
 	
-	return '<img src="/browser/os/'.$code.'.png" title="'.$title.'" style="margin-bottom:-4px" /> ';
+	return '<img src="/browser/os/'.$code.'.png" title="'.$title.'" class="i1" /> ';
 }
 
 //Detect Platform (check for Device, then OS if no device is found, else return null)
@@ -1506,7 +1506,7 @@ function detect_platform(){
 		return '';
 	}
 	
-	return '<img src="/browser/browsers/'.$code.'.png" title="'.$title.'" style="margin-bottom:-4px" /> ';
+	return '<img src="/browser/browsers/'.$code.'.png" title="'.$title.'" class="i1" /> ';
 }
 
 ?>
