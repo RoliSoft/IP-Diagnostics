@@ -3,7 +3,7 @@
 Plugin Name: WP-UserAgent
 Plugin URI: http://kyleabaker.com/goodies/coding/wp-useragent/
 Description: A simple User-Agent detection plugin that lets you easily insert icons and/or textual web browser and operating system details with each comment.
-Version: 0.10.8
+Version: 0.10.11
 Author: Kyle Baker
 Author URI: http://kyleabaker.com/
 //Author: Fernando Briano
@@ -32,7 +32,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 function detect_browser_version($title){
 	//fix for Opera's (and others) UA string changes in v10.00
 	$start=$title;
-	if((strtolower($title)==strtolower("Opera") || strtolower($title)==strtolower("Opera Next")) && preg_match('/Version/i', $_SERVER['HTTP_USER_AGENT']))
+	if((strtolower($title)==strtolower("Opera") || strtolower($title)==strtolower("Opera Next") 
+		|| strtolower($title)==strtolower("Opera Labs")) && preg_match('/Version/i', $_SERVER['HTTP_USER_AGENT']))
 		$start="Version";
 	elseif(strtolower($title)==strtolower("Opera Mobi") && preg_match('/Version/i', $_SERVER['HTTP_USER_AGENT']))
 		$start="Version";
@@ -80,6 +81,11 @@ function detect_browser_version($title){
 		return "MicroB ".$version;
 	elseif(strtolower($title)=="tencenttraveler")
 		return "TT Explorer ".$version;
+	elseif(strtolower($title)=="opera labs")
+	{
+		preg_match('/Edition\ Labs([\ ._0-9a-zA-Z]+);/i', $_SERVER['HTTP_USER_AGENT'], $regmatch);
+		return $title.$regmatch[1]." ".$version;
+	}
 	else
 		return $title." ".$version;
 }
@@ -95,10 +101,6 @@ function detect_webbrowser(){
 		$link="http://www.aborange.de/products/freeware/abolimba-multibrowser.php";
 		$title="Abolimba";
 		$code="abolimba";
-	}elseif(preg_match('/ABrowse/i', $_SERVER['HTTP_USER_AGENT'])){
-		$link="http://abrowse.sourceforge.net/";
-		$title=detect_browser_version("ABrowse");
-		$code="abrowse";
 	}elseif(preg_match('/Acoo\ Browser/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.acoobrowser.com/";
 		$title="Acoo ".detect_browser_version("Browser");
@@ -179,6 +181,10 @@ function detect_webbrowser(){
 		$link="http://www.caymanbrowser.com/";
 		$title="Cayman ".detect_browser_version("Browser");
 		$code="caymanbrowser";
+	}elseif(preg_match('/Charon/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://en.wikipedia.org/wiki/Charon_(web_browser)";
+		$title=detect_browser_version("Charon");
+		$code="null";
 	}elseif(preg_match('/Cheshire/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://downloads.channel.aol.com/browser";
 		$title=detect_browser_version("Cheshire");
@@ -203,6 +209,10 @@ function detect_webbrowser(){
 		$link="http://www.chromium.org/";
 		$title=detect_browser_version("Chromium");
 		$code="chromium";
+	}elseif(preg_match('/Columbus/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://www.columbus-browser.com/";
+		$title=detect_browser_version("Columbus");
+		$code="columbus";
 	}elseif(preg_match('/CometBird/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.cometbird.com/";
 		$title=detect_browser_version("CometBird");
@@ -215,6 +225,10 @@ function detect_webbrowser(){
 		$link="http://www.conkeror.org/";
 		$title=detect_browser_version("Conkeror");
 		$code="conkeror";
+	}elseif(preg_match('/CoolNovo/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://www.coolnovo.com/";
+		$title=detect_browser_version("CoolNovo");
+		$code="coolnovo";
 	}elseif(preg_match('/Crazy\ Browser/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.crazybrowser.com/";
 		$title="Crazy ".detect_browser_version("Browser");
@@ -263,6 +277,10 @@ function detect_webbrowser(){
 		$link="http://www.anygraaf.fi/browser/indexe.htm";
 		$title=detect_browser_version("Doris");
 		$code="doris";
+	}elseif(preg_match('/Dorothy/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://www.dorothybrowser.com/";
+		$title=detect_browser_version("Dorothy");
+		$code="dorothybrowser";
 	}elseif(preg_match('/Edbrowse/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://edbrowse.sourceforge.net/";
 		$title=detect_browser_version("Edbrowse");
@@ -299,6 +317,10 @@ function detect_webbrowser(){
 		$link="http://seb.mozdev.org/firebird/";
 		$title=detect_browser_version("Firebird");
 		$code="firebird";
+	}elseif(preg_match('/Fireweb\ Navigator/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://www.arsslensoft.tk/?q=node/7";
+		$title=detect_browser_version("Fireweb Navigator");
+		$code="firewebnavigator";
 	}elseif(preg_match('/Flock/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.flock.com/";
 		$title=detect_browser_version("Flock");
@@ -447,6 +469,10 @@ function detect_webbrowser(){
 		$link="http://konqueror.kde.org/";
 		$title=detect_browser_version("Konqueror");
 		$code="konqueror";
+	}elseif(preg_match('/Kylo/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://kylo.tv/";
+		$title=detect_browser_version("Kylo");
+		$code="kylo";
 	}elseif(preg_match('/LBrowser/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://wiki.freespire.org/index.php/Web_Browser";
 		$title=detect_browser_version("LBrowser");
@@ -579,6 +605,10 @@ function detect_webbrowser(){
 		$link="http://www.access-company.com/";
 		$title=detect_browser_version("NF-Browser");
 		$code="netfront";
+	}elseif(preg_match('/NokiaBrowser/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://browser.nokia.com/";
+		$title="Nokia ".detect_browser_version("Browser");
+		$code="nokia";
 	}elseif(preg_match('/Novarra-Vision/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.novarra.com/";
 		$title="Novarra ".detect_browser_version("Vision");
@@ -603,7 +633,11 @@ function detect_webbrowser(){
 		$link="http://www.opera.com/mobile/";
 		$title=detect_browser_version("Opera Mobi");
 		$code="opera-2";
-	}elseif(preg_match('/Opera Next/i', $_SERVER['HTTP_USER_AGENT'])){
+	}elseif(preg_match('/Opera Labs/i', $_SERVER['HTTP_USER_AGENT']) || (preg_match('/Opera/i', $_SERVER['HTTP_USER_AGENT']) && preg_match('/Edition Labs/i', $_SERVER['HTTP_USER_AGENT']))){
+		$link="http://labs.opera.com/";
+		$title=detect_browser_version("Opera Labs");
+		$code="opera-next";
+	}elseif(preg_match('/Opera Next/i', $_SERVER['HTTP_USER_AGENT']) || (preg_match('/Opera/i', $_SERVER['HTTP_USER_AGENT']) && preg_match('/Edition Next/i', $_SERVER['HTTP_USER_AGENT']))){
 		$link="http://www.opera.com/support/kb/view/991/";
 		$title=detect_browser_version("Opera Next");
 		$code="opera-next";
@@ -741,6 +775,14 @@ function detect_webbrowser(){
 		$link="http://www.flock.com/";
 		$title="Flock ".detect_browser_version("Sulfur");
 		$code="flock";
+	}elseif(preg_match('/Sundance/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://digola.com/sundance.html";
+		$title=detect_browser_version("Sundance");
+		$code="sundance";
+	}elseif(preg_match('/Sunrise/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://www.sundialbrowser.com/";
+		$title=detect_browser_version("Sundial");
+		$code="sundial";
 	}elseif(preg_match('/Sunrise/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.sunrisebrowser.com/";
 		$title=detect_browser_version("Sunrise");
@@ -757,6 +799,10 @@ function detect_webbrowser(){
 		$link="http://swiftweasel.tuxfamily.org/";
 		$title=detect_browser_version("Swiftweasel");
 		$code="swiftweasel";
+	}elseif(preg_match('/Sylera/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://dombla.net/sylera/";
+		$title=detect_browser_version("Sylera");
+		$code="null";
 	}elseif(preg_match('/tear/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://wiki.maemo.org/Tear";
 		$title="Tear";
@@ -813,6 +859,10 @@ function detect_webbrowser(){
 		$link="http://www.openwave.com/";
 		$title=detect_browser_version("UP.Link");
 		$code="openwave";
+	}elseif(preg_match('/Usejump/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://www.usejump.com/";
+		$title=detect_browser_version("Usejump");
+		$code="usejump";
 	}elseif(preg_match('/uZardWeb/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://en.wikipedia.org/wiki/UZard_Web";
 		$title=detect_browser_version("uZardWeb");
@@ -841,6 +891,14 @@ function detect_webbrowser(){
 		$link="http://developer.android.com/reference/android/webkit/package-summary.html";
 		$title=detect_browser_version("Android Webkit");
 		$code="android-webkit";
+	}elseif(preg_match('/WebianShell/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://webian.org/shell/";
+		$title="Webian ".detect_browser_version("Shell");
+		$code="webianshell";
+	}elseif(preg_match('/Webrender/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://webrender.99k.org/";
+		$title="Webrender";
+		$code="webrender";
 	}elseif(preg_match('/WeltweitimnetzBrowser/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://weltweitimnetz.de/software/Browser.en.page";
 		$title="Weltweitimnetz ".detect_browser_version("Browser");
@@ -867,6 +925,10 @@ function detect_webbrowser(){
 		$code="null";
 
 	//Pulled out of order to help ensure better detection for above browsers
+	}elseif(preg_match('/ABrowse/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://abrowse.sourceforge.net/";
+		$title=detect_browser_version("ABrowse");
+		$code="abrowse";
 	}elseif(preg_match('/Chrome/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://google.com/chrome/";
 		$title="Google ".detect_browser_version("Chrome");
@@ -1044,6 +1106,12 @@ function detect_device(){
 			$title.=" ".$regmatch[1];
 		$code="lg";
 
+	//Microsoft
+	}elseif(preg_match('/Windows Phone OS 7.0/i', $_SERVER['HTTP_USER_AGENT']) || preg_match('/ZuneWP7/i', $_SERVER['HTTP_USER_AGENT']) || preg_match('/WP7/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://www.microsoft.com/windowsphone/";
+		$title.="Windows Phone 7";
+		$code="wp7";
+
 	//Motorola
 	}elseif(preg_match('/\ Droid/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://en.wikipedia.org/wiki/Motorola_Droid";
@@ -1164,36 +1232,52 @@ function detect_os(){
 		if(preg_match('/AmigaOS\ ([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
 			$title.=" ".$regmatch[1];
 		$code="amigaos";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Android/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.android.com/";
 		$title="Android";
 		$code="android";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/[^A-Za-z]Arch/i', $_SERVER['HTTP_USER_AGENT'])) { //&& !preg_match('/Search/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.archlinux.org/";
 		$title="Arch Linux";
 		$code="archlinux";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/BeOS/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://en.wikipedia.org/wiki/BeOS";
 		$title="BeOS";
 		$code="beos";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/CentOS/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.centos.org/";
 		$title="CentOS";
 		if(preg_match('/.el([.0-9a-zA-Z]+).centos/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
 			$title.=" ".$regmatch[1];
 		$code="centos";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/CrOS/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://en.wikipedia.org/wiki/Google_Chrome_OS";
 		$title="Google Chrome OS";
 		$code="chromeos";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Debian/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.debian.org/";
 		$title="Debian GNU/Linux";
 		$code="debian";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/DragonFly/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.dragonflybsd.org/";
 		$title="DragonFly BSD";
 		$code="dragonflybsd";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Edubuntu/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.edubuntu.org/";
 		$title="Edubuntu";
@@ -1205,26 +1289,42 @@ function detect_os(){
 			$code="edubuntu-2";
 		if(strlen($version) > 1)
 			$title.=$version;
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Fedora/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.fedoraproject.org/";
 		$title="Fedora";
 		if(preg_match('/.fc([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
 			$title.=" ".$regmatch[1];
 		$code="fedora";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Foresight\ Linux/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.foresightlinux.org/";
 		$title="Foresight Linux";
 		if(preg_match('/Foresight\ Linux\/([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
 			$title.=" ".$regmatch[1];
 		$code="foresight";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/FreeBSD/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.freebsd.org/";
 		$title="FreeBSD";
 		$code="freebsd";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Gentoo/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.gentoo.org/";
 		$title="Gentoo";
 		$code="gentoo";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
+	}elseif(preg_match('/Inferno/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://www.vitanuova.com/inferno/";
+		$title="Inferno";
+		$code="inferno";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/IRIX/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.sgi.com/partners/?/technology/irix/";
 		$title="IRIX Linux";
@@ -1235,14 +1335,20 @@ function detect_os(){
 				$title.=" ".$regmatch[2];
 		}
 		$code="irix";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Kanotix/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.kanotix.com/";
 		$title="Kanotix";
 		$code="kanotix";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Knoppix/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.knoppix.net/";
 		$title="Knoppix";
 		$code="knoppix";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Kubuntu/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.kubuntu.org/";
 		$title="Kubuntu";
@@ -1254,20 +1360,28 @@ function detect_os(){
 			$code="kubuntu-2";
 		if(strlen($version) > 1)
 			$title.=$version;
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/LindowsOS/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://en.wikipedia.org/wiki/Lsongs";
 		$title="LindowsOS";
 		$code="lindowsos";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Linspire/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.linspire.com/";
 		$title="Linspire";
 		$code="lindowsos";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Linux\ Mint/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.linuxmint.com/";
 		$title="Linux Mint";
 		if(preg_match('/Linux\ Mint\/([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
 			$title.=" ".$regmatch[1];
 		$code="linuxmint";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Lubuntu/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.lubuntu.net/";
 		$title="Lubuntu";
@@ -1279,17 +1393,23 @@ function detect_os(){
 			$code="lubuntu-2";
 		if(strlen($version) > 1)
 			$title.=$version;
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Mac/i', $_SERVER['HTTP_USER_AGENT']) || preg_match('/Darwin/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.apple.com/macosx/";
 		if(preg_match('/Mac OS X/i', $_SERVER['HTTP_USER_AGENT'])){
 			$title=substr($_SERVER['HTTP_USER_AGENT'], strpos(strtolower($_SERVER['HTTP_USER_AGENT']), strtolower("Mac OS X")));
-			$title=substr($title, 0, strpos($title, ";"));
-			$title=str_replace("_", ".", $title); 
+			$title=substr($title, 0, strpos($title, ")"));
+			if (strpos($title, ";"))
+				$title=substr($title, 0, strpos($title, ";"));
+			$title=str_replace("_", ".", $title);
 			$code="mac-3";
 		}elseif(preg_match('/Mac OSX/i', $_SERVER['HTTP_USER_AGENT'])){
-			$title=substr($_SERVER['HTTP_USER_AGENT'], strpos(strtolower($_SERVER['HTTP_USER_AGENT']), strtolower("Mac OSX")));
-			$title=substr($title, 0, strpos($title, ";"));
-			$title=str_replace("_", ".", $title); 
+			$title=substr($_SERVER['HTTP_USER_AGENT'], strpos(strtolower($_SERVER['HTTP_USER_AGENT']), strtolower("Mac OS X")));
+			$title=substr($title, 0, strpos($title, ")"));
+			if (strpos($title, ";"))
+				$title=substr($title, 0, strpos($title, ";"));
+			$title=str_replace("_", ".", $title);
 			$code="mac-2";
 		}elseif(preg_match('/Darwin/i', $_SERVER['HTTP_USER_AGENT'])){
 			$title="Mac OS Darwin";
@@ -1304,24 +1424,44 @@ function detect_os(){
 		if(preg_match('/mdv([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
 			$title.=" ".$regmatch[1];
 		$code="mandriva";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/moonOS/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.moonos.org/";
 		$title="moonOS";
 		if(preg_match('/moonOS\/([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
 			$title.=" ".$regmatch[1];
 		$code="moonos";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/MorphOS/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.morphos-team.net/";
 		$title="MorphOS";
 		$code="morphos";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/NetBSD/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.netbsd.org/";
 		$title="NetBSD";
 		$code="netbsd";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
+	}elseif(preg_match('/Nova/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://www.nova.cu";
+		$title="Nova";
+		if(preg_match('/Nova[\/|\ ]([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
+			$version.=" ".$regmatch[1];
+		if(strlen($version) > 1)
+			$title.=$version;
+		$code="nova";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/OpenBSD/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.openbsd.org/";
 		$title="OpenBSD";
 		$code="openbsd";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Oracle/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.oracle.com/us/technologies/linux/";
 		$title="Oracle";
@@ -1330,26 +1470,36 @@ function detect_os(){
 		else
 			$title.=" Linux";
 		$code="oracle";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/PCLinuxOS/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.pclinuxos.com/";
 		$title="PCLinuxOS";
 		if(preg_match('/PCLinuxOS\/[.\-0-9a-zA-Z]+pclos([.\-0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
 			$title.=" ".str_replace("_", ".", $regmatch[1]);
 		$code="pclinuxos";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Red\ Hat/i', $_SERVER['HTTP_USER_AGENT']) || preg_match('/RedHat/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.redhat.com/";
 		$title="Red Hat";
 		if(preg_match('/.el([._0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
 			$title.=" Enterprise Linux ".str_replace("_", ".", $regmatch[1]);
-		$code="mandriva";
+		$code="red-hat";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Sabayon/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.sabayonlinux.org/";
 		$title="Sabayon Linux";
 		$code="sabayon";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Slackware/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.slackware.com/";
 		$title="Slackware";
 		$code="slackware";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Solaris/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.sun.com/software/solaris/";
 		$title="Solaris";
@@ -1362,35 +1512,34 @@ function detect_os(){
 		$link="http://www.opensuse.org/";
 		$title="openSUSE";
 		$code="suse";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Symb[ian]?[OS]?/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.symbianos.org/";
 		$title="SymbianOS";
 		if(preg_match('/Symb[ian]?[OS]?\/([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
 			$title.=" ".$regmatch[1];
 		$code="symbianos";
-	}elseif(preg_match('/Ubuntu/i', $_SERVER['HTTP_USER_AGENT'])){
-		$link="http://www.ubuntu.com/";
-		$title="Ubuntu";
-		if(preg_match('/Ubuntu[\/|\ ]([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
-			$version.=" ".$regmatch[1];
-		if($regmatch[1] < 10)
-			$code="ubuntu-1";
-		else
-			$code="ubuntu-2";
-		if(strlen($version) > 1)
-			$title.=$version;
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Unix/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.unix.org/";
 		$title="Unix";
 		$code="unix";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/VectorLinux/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.vectorlinux.com/";
 		$title="VectorLinux";
 		$code="vectorlinux";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Venenux/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.venenux.org/";
 		$title="Venenux GNU Linux";
 		$code="venenux";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/webOS/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://en.wikipedia.org/wiki/WebOS";
 		$title="Palm webOS";
@@ -1462,6 +1611,8 @@ function detect_os(){
 		$link="http://www.xandros.com/";
 		$title="Xandros";
 		$code="xandros";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Xubuntu/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.xubuntu.org/";
 		$title="Xubuntu";
@@ -1473,12 +1624,29 @@ function detect_os(){
 			$code="xubuntu-2";
 		if(strlen($version) > 1)
 			$title.=$version;
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Zenwalk/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.zenwalk.org/";
 		$title="Zenwalk GNU Linux";
 		$code="zenwalk";
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 
 	//Pulled out of order to help ensure better detection for above platforms
+	}elseif(preg_match('/Ubuntu/i', $_SERVER['HTTP_USER_AGENT'])){
+		$link="http://www.ubuntu.com/";
+		$title="Ubuntu";
+		if(preg_match('/Ubuntu[\/|\ ]([.0-9a-zA-Z]+)/i', $_SERVER['HTTP_USER_AGENT'], $regmatch))
+			$version.=" ".$regmatch[1];
+		if($regmatch[1] < 10)
+			$code="ubuntu-1";
+		else
+			$code="ubuntu-2";
+		if(strlen($version) > 1)
+			$title.=$version;
+		if(preg_match('/x86_64/i', $_SERVER['HTTP_USER_AGENT']))
+			$title.=" x64";
 	}elseif(preg_match('/Linux/i', $_SERVER['HTTP_USER_AGENT'])){
 		$link="http://www.linux.org/";
 		$title="GNU/Linux";
