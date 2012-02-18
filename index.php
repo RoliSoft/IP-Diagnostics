@@ -87,7 +87,7 @@ print '<h1>';
 	}
 	
 	if(!empty($proxy)){
-		print ' <img src="/browser/other/arrow.png"  title="X-Forwarded-For" /> '.process_ip($proxy);
+		print ' <img src="/browser/other/arrow.png" class="i1" title="X-Forwarded-For" /> '.process_ip($proxy);
 		if(is_ipv6($proxy) && $v4pr = v6to4($proxy)){
 			$proxy = $v4pr;
 			print ' <img src="/browser/other/arrow-s.png" class="in" title="6to4 tunnel destination" /> '.process_ip($proxy);
@@ -105,7 +105,7 @@ print '<h2>';
 		$prhost = gethostbyaddrc($proxy);
 		if($prhost == $proxy) $uprhost = $prhost = revaddr($proxy, true);
 		
-		print ' <img src="/browser/other/arrow-s.png" class="i2" class="xforwardedfor" title="X-Forwarded-For" /> <span class="host"'.($uprhost?' style="color:gray"':'').'>'.$prhost.'</span>';
+		print ' <img src="/browser/other/arrow-s.png" class="xforwardedfor i2" title="X-Forwarded-For" /> <span class="host"'.($uprhost?' style="color:gray"':'').'>'.$prhost.'</span>';
 	}
 print '</h2><br />';
 
@@ -113,7 +113,7 @@ print '<h2>';
 	print lookup_isp($addr);
 	
 	if($proxy){
-		print ' <img src="/browser/other/arrow-s.png" class="i2" class="xforwardedfor" title="X-Forwarded-For" /> '.lookup_isp($proxy, 1);
+		print ' <img src="/browser/other/arrow-s.png" class="xforwardedfor i2" title="X-Forwarded-For" /> '.lookup_isp($proxy, 1);
 	}
 print '</h2><br />';
 
@@ -206,19 +206,19 @@ function process_ip($addr, $xfwd = false){
 
 function is_tor($addr){
 	if(substr_count($addr, '.') != 0 && gethostbynamec(revaddr($addr).'.'.$_SERVER['SERVER_PORT'].'.'.revaddr($_SERVER['SERVER_ADDR']).'.ip-port.exitlist.torproject.org') == '127.0.0.2'){
-		return '<img src="/browser/other/tor.png" title="TOR exit node" class="tor" class="i1" /> ';
+		return '<img src="/browser/other/tor.png" title="TOR exit node" class="tor i1" /> ';
 	}
 }
 
 function is_opturbo($addr){
 	if(substr(gethostbyaddrc($addr), -15) == '.opera-mini.net'){
-		return '<img src="/browser/other/turbo.png" class="ib" class="operaturbo" title="Opera Turbo proxy" /> ';
+		return '<img src="/browser/other/turbo.png" class="operaturbo ib" title="Opera Turbo proxy" /> ';
 	}
 }
 
 function is_planetlab($addr){
 	if(preg_match('/^planet(?:lab)?\d+\./i', gethostbyaddrc($addr))){
-		return '<img src="/browser/other/planetlab.jpg" class="ib" class="planetlab" title="PlanetLab proxy" /> ';
+		return '<img src="/browser/other/planetlab.jpg" class="planetlab ib" title="PlanetLab proxy" /> ';
 	}
 }
 
@@ -231,7 +231,7 @@ function is_proxy($addr){
 
 function is_ipv6($addr){
 	if(substr_count($addr, ':') > 0 && substr_count($addr, '.') == 0){
-		return '<img src="/browser/other/ipv6.jpg" title="IPv6, fuck yeah!" class="i1" /> ';
+		return '<img src="/browser/other/ipv6.png" title="IPv6, fuck yeah!" class="i1" /> ';
 	}
 }
 
