@@ -328,11 +328,7 @@ function lookup_isp($addr, $idx = 0){
 					
 					if($ip2 != $m[1]){
 						$addr = $ip2;
-					} else {
-						break;
 					}
-				} else {
-					break;
 				}
 			}
 		}
