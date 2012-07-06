@@ -1,6 +1,10 @@
 <?php
 header('Content-Type: text/html; charset=UTF-8');
 
+if(!empty($_GET['lookup'])){
+	die('<pre>'.@shell_exec('whois -d '.escapeshellarg($_GET['lookup'])).'</pre>');
+}
+
 if(!empty($_GET['whois'])){
 	$chip  = inet_ntop(base64_decode($_GET['whois']));
 	$whois = @whois($chip);
@@ -67,7 +71,7 @@ if(!$proxy && $_SERVER['HTTP_VIA'] && preg_match('/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d
 if($_SERVER['HTTP_CLIENT_IP']) $proxy = $_SERVER['HTTP_CLIENT_IP'];
 if($_SERVER['HTTP_X_CODEMUX_CLIENT']) $proxy = $_SERVER['HTTP_X_CODEMUX_CLIENT'];
 
-print '<meta name="HandheldFriendly" content="true" /><meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" /><style>*{margin:0}.c{font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto}.i1{margin-bottom:-4px}.i2{margin-bottom:-3px}.in{margin-bottom:0px}.ib{margin-bottom:-5px}a{color:lightslategray;text-decoration:none}@media screen and (max-width:800px){h1,h2,h3{font-size:16px !important}h2,h3{font-weight:normal}img{height:21px;width:21px;margin-bottom:-4px !important}}</style>';
+print '<meta name="HandheldFriendly" content="true" /><meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" /><style>*{margin:0}.c{color:black;font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto}.i1{margin-bottom:-4px}.i2{margin-bottom:-3px}.in{margin-bottom:0px}.ib{margin-bottom:-5px}.ip a{color:black;text-decoration:none}.asnum a{color:lightslategray;text-decoration:none}a:hover{border-bottom:1px dotted black}@media screen and (max-width:800px){h1,h2,h3{font-size:16px !important}h2,h3{font-weight:normal}img{height:21px;width:21px;margin-bottom:-4px !important}}</style>';
 
 include 'libs/wpua/wp-useragent.php';
 include 'libs/geoip/geoipcity.inc';
@@ -201,7 +205,7 @@ function process_ip($addr, $xfwd = false){
 	if(!$tr && !$op && !$pl && $xfwd) $ret .= '<img src="/browser/other/proxy.png" title="Proxy detected" class="i1" /> ';
 	if(!$tr && !$op && !$pl && !$v6 && !$xfwd) $ret .= ($pr = is_proxy_db($addr)) == 1 ? '<img src="/browser/other/proxy.png" title="Anonymous proxy detected" class="i1" /> ' : '';
 	if(!$tr && !$op && !$pl && !$v6 && !$xfwd && $pr == -1) $ret .= is_proxy($addr);
-	$ret .= '<span class="ip">'.$addr.'</span>';
+	$ret .= '<span class="ip"><a href="/browser/?lookup='.$addr.'">'.$addr.'</a></span>';
 	
 	return $ret;
 }
