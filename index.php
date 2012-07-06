@@ -10,7 +10,7 @@ if(!empty($_GET['whois'])){
 	if(!$isp && $whois['orgname'][0]) $isp = $whois['orgname'][0];
 	
 	if($country){
-		include 'geoip.inc';
+		include 'libs/geoip/geoip.inc';
 		$gi = new GeoIP();
 		$cname = $gi->GEOIP_COUNTRY_NAMES[$gi->GEOIP_COUNTRY_CODE_TO_NUMBER[strtoupper(trim($country))]];
 	}
@@ -53,7 +53,7 @@ if(!empty($_GET['is_proxy'])){
 	die();
 }
 
-//$_SERVER['REMOTE_ADDR'] = '79.119.213.42';
+//$_SERVER['REMOTE_ADDR'] = '79.119.215.229';
 //$_SERVER['REMOTE_ADDR'] = '2002:4f77:d54e::4f77:d54e';
 //$_SERVER['REMOTE_ADDR'] = '2607:f298:1:105::8d8:796c';
 //$_SERVER['REMOTE_ADDR'] = '2a02:2f02:9021:f00d::567d:bf36';
@@ -67,14 +67,16 @@ if(!$proxy && $_SERVER['HTTP_VIA'] && preg_match('/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d
 if($_SERVER['HTTP_CLIENT_IP']) $proxy = $_SERVER['HTTP_CLIENT_IP'];
 if($_SERVER['HTTP_X_CODEMUX_CLIENT']) $proxy = $_SERVER['HTTP_X_CODEMUX_CLIENT'];
 
-print '<meta name="HandheldFriendly" content="true" /><meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" /><style>*{margin:0}.c{font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto}.i1{margin-bottom:-4px}.i2{margin-bottom:-3px}.in{margin-bottom:0px}.ib{margin-bottom:-5px}@media screen and (max-width:800px){h1,h2,h3{font-size:16px !important}h2,h3{font-weight:normal}img{height:21px;width:21px;margin-bottom:-4px !important}}</style>';
+print '<meta name="HandheldFriendly" content="true" /><meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" /><style>*{margin:0}.c{font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto}.i1{margin-bottom:-4px}.i2{margin-bottom:-3px}.in{margin-bottom:0px}.ib{margin-bottom:-5px}a{color:lightslategray;text-decoration:none}@media screen and (max-width:800px){h1,h2,h3{font-size:16px !important}h2,h3{font-weight:normal}img{height:21px;width:21px;margin-bottom:-4px !important}}</style>';
 
-include 'wp-useragent.php';
-include 'geoipcity.inc';
-include 'geoipregionvars.php';
-$gi  = geoip_open('GeoIPCity.dat', GEOIP_STANDARD);
-$gi2 = geoip_open('GeoIPOrg.dat', GEOIP_STANDARD);
-$gi6 = geoip_open('GeoLiteCityv6.dat', GEOIP_STANDARD);
+include 'libs/wpua/wp-useragent.php';
+include 'libs/geoip/geoipcity.inc';
+include 'libs/geoip/geoipregionvars.php';
+include 'libs/pear/Net/DNS2.php';
+$gi   = geoip_open('geodb/GeoLiteCity.dat', GEOIP_STANDARD);
+$gi6  = geoip_open('geodb/GeoLiteCityv6.dat', GEOIP_STANDARD);
+$gia  = geoip_open('geodb/GeoIPASNum.dat', GEOIP_ASNUM_EDITION);
+$gia6 = geoip_open('geodb/GeoIPASNumv6.dat', GEOIP_ASNUM_EDITION_V6);
 
 $proxycheck = 0;
 
@@ -272,11 +274,7 @@ function lookup_ip($addr, $idx = 0){
 					
 					if($ip2 != $m[1]){
 						$addr = $ip2;
-					} else {
-						break;
 					}
-				} else {
-					break;
 				}
 			}
 		}
@@ -300,15 +298,22 @@ function lookup_ip($addr, $idx = 0){
 }
 
 function lookup_isp($addr, $idx = 0){
-	global $gi2, $scripts;
+	global $gia, $gia6, $scripts;
 	
 	$v6 = is_ipv6($addr);
 	$s2 = false;
 	
    lookup:
-	$isp = geoip_name_by_addr($gi2, $addr);
+	if($v6){
+		$isp = geoip_name_by_addr_v6($gia6, $addr);
+	} else {
+		$isp = geoip_name_by_addr($gia, $addr);
+	}
 	
-	if(!empty($isp)) $isp = '<span class="isp">'.$isp.'</span>';
+	if(!empty($isp)){
+		$isp = explode(' ', $isp, 2);
+		$isp = '<span class="asnum"><a href="http://bgp.he.net/'.$isp[0].'">'.$isp[0].'</a></span> <span class="isp">'.$isp[1].'</span>';
+	}
 	
 	if(!$s2 && empty($isp)){
 		$s2 = true;
@@ -347,31 +352,51 @@ function lookup_isp($addr, $idx = 0){
 function gethostbyaddrc($addr){
 	global $addrs;
 	
-	if(!$addrs[$addr]){
-		return $addrs[$addr] = gethostbyaddr($addr);
-	} else {
+	if($addrs[$addr]){
 		return $addrs[$addr];
 	}
+	
+	$dns = new Net_DNS2_Resolver(array('nameservers' => array('8.8.8.8', '8.8.4.4')));
+	
+	try {
+		$res = $dns->query($addr, 'PTR');
+	} catch (Net_DNS2_Exception $e) {
+		return $addr;
+	}
+	
+	if(count($res->answer) == 0){
+		return $addr;
+	}
+	
+	return $addrs[$addr] = $res->answer[0]->ptrdname;
 }
 
 function gethostbynamec($host){
 	global $hosts;
 	
-	if(!$hosts[$host]){
-		return $hosts[$host] = gethostbyname($host);
-	} else {
+	if($hosts[$host]){
 		return $hosts[$host];
 	}
-}
-
-function gethostbynamee($host){
-	$query = `nslookup -type=A -timeout=1 -retry=1 $host`;
 	
-	if(preg_match('/\nAddress: (.*)\n/', $query, $m)){
-		return trim($m[1]);
-	} else {
+	$dns = new Net_DNS2_Resolver(array('nameservers' => array('8.8.8.8', '8.8.4.4')));
+	
+	try {
+		$res = $dns->query($host, 'AAAA');
+	} catch (Net_DNS2_Exception $e) { }
+	
+	if(count($res->answer) == 0){
+		try {
+			$res = $dns->query($host, 'A');
+		} catch (Net_DNS2_Exception $e) {
+			return;
+		}
+	}
+	
+	if(count($res->answer) == 0){
 		return $host;
 	}
+	
+	return $hosts[$host] = $res->answer[0]->address;
 }
 
 function whois($ip) {

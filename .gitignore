@@ -1,9 +1,8 @@
 
-/GeoLiteCity.dat
-/cache.php
 /proxy_check.db
 /sqlite3.exe
-/GeoIPCity.dat
-/GeoIPOrg.dat
-/GeoLiteCityv6.dat
-/MaxMind.GeoIP.Country.City.Organization.Database.March.2011.rar
+/geodb/*.dat
+/geodb/*.dat.gz
+/geodb/*.dat.xz
+/geodb/*.rar
+/geodb/*.zip
