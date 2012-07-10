@@ -26,18 +26,18 @@ if(!empty($_GET['whois'])){
 	}
 	
 	if(isset($_GET['isp']) && $isp){
-		print '$(\'#isp\')['.((int)$_GET['isp']).'].innerHTML=\''.$isp.'\';';
+		print '$(\'.isp\')['.((int)$_GET['isp']).'].innerHTML=\''.$isp.'\';';
 	}
 	
 	if(isset($_GET['geoip']) && $cname){
-		print '$(\'#geoip\')['.((int)$_GET['geoip']).'].innerHTML=\''.$cname.'\';var a=$(\'#flag\')['.((int)$_GET['geoip']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($country).'.png\';a.title=\''.$cname.'\';document.title=document.title.replace(\'GeoIP: Reserved\', \'GeoIP: '.$cname.'\');';
+		print '$(\'.geoip\')['.((int)$_GET['geoip']).'].innerHTML=\''.$cname.'\';var a=$(\'.flag\')['.((int)$_GET['geoip']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($country).'.png\';a.title=\''.$cname.'\';document.title=document.title.replace(\'GeoIP: Reserved\', \'GeoIP: '.$cname.'\');';
 	}
 	
 	die();
 }
 
 if(!empty($_GET['is_proxy'])){
-	$prst = '$(\'#placeholder\')['.((int)$_GET['placeholder']).'].innerHTML=\'<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected" class="i1" /> \';';
+	$prst = '$(\'.placeholder\')['.((int)$_GET['placeholder']).'].innerHTML=\'<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected" class="i1" /> \';';
 	$chip = inet_ntop(base64_decode($_GET['is_proxy']));
 	$ispr = is_proxy_db($chip);
 	
@@ -63,12 +63,15 @@ if(!empty($_GET['is_proxy'])){
 	die();
 }
 
-//$_SERVER['REMOTE_ADDR'] = '79.119.215.229';
-//$_SERVER['REMOTE_ADDR'] = '2002:4f77:d54e::4f77:d54e';
-//$_SERVER['REMOTE_ADDR'] = '2607:f298:1:105::8d8:796c';
-//$_SERVER['REMOTE_ADDR'] = '2a02:2f02:9021:f00d::567d:bf36';
-//$_SERVER['HTTP_X_FORWARDED_FOR'] = '69.163.231.16';
-//$_SERVER['HTTP_X_FORWARDED_FOR'] = '2002:0:0:0:0:0:d9d4:e60e';
+//$_SERVER['REMOTE_ADDR'] = '79.119.215.229'; // ipv4
+//$_SERVER['REMOTE_ADDR'] = '2a02:2f02:9020:e0ee:70:e190:c11d:2634'; // ipv6
+//$_SERVER['REMOTE_ADDR'] = '2002:4f77:d7e5::1'; // 6to4
+//$_SERVER['REMOTE_ADDR'] = '2001:0000:4f77:d7e5:8000:63bf:3fff:fdd2'; // teredo
+//$_SERVER['REMOTE_ADDR'] = 'fe80:0000:0000:0000:0200:5efe:4f77:d7e5'; // link-local
+//$_SERVER['REMOTE_ADDR'] = '64:ff9b::79.119.215.229'; // nat64
+//$_SERVER['REMOTE_ADDR'] = '2607:f298:1:105::8d8:796c'; // ipv6 us
+//$_SERVER['HTTP_X_FORWARDED_FOR'] = '69.163.231.16'; // ipv4 proxy
+//$_SERVER['HTTP_X_FORWARDED_FOR'] = '2607:f298:1:105::8d8:796c'; // ipv6 proxy
 
 $addr  = $_SERVER['REMOTE_ADDR'];
 $proxy = $_SERVER['HTTP_X_FORWARDED_FOR'];
@@ -91,7 +94,7 @@ if((bool)$_GET['6to4'] === true){
 		$gip = geoip_record_by_addr($gi, !empty($proxy) && $_GET['geoip'] == 1 ? $proxy : $addr);
 		$ip = $gip->country_name.', '.ucwords2($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.ucwords2($gip->city);
 		$ip = rtrim($ip, ' ,');
-		print '$(\'#geoip\')['.((int)$_GET['geoip']).'].innerHTML=\''.$ip.'\';var a=$(\'#flag\')['.((int)$_GET['geoip']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($gip->country_code).'.png\';a.title=\''.$gip->country_name.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
+		print '$(\'.geoip\')['.((int)$_GET['geoip']).'].innerHTML=\''.$ip.'\';var a=$(\'.flag\')['.((int)$_GET['geoip']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($gip->country_code).'.png\';a.title=\''.$gip->country_name.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
 	}
 	
 	if(isset($_GET['isp'])){
@@ -99,7 +102,7 @@ if((bool)$_GET['6to4'] === true){
 		
 		if(!empty($isp)){
 			$isp = explode(' ', $isp, 2);
-			print '$(\'#asnum\')['.((int)$_GET['isp']).'].innerHTML=\'<a href="http://bgp.he.net/'.$isp[0].'">'.$isp[0].'</a>\';$(\'#isp\')['.((int)$_GET['isp']).'].innerHTML=\''.$isp[1].'\';';
+			print '$(\'.asnum\')['.((int)$_GET['isp']).'].innerHTML=\'<a href="http://bgp.he.net/'.$isp[0].'">'.$isp[0].'</a>\';$(\'.isp\')['.((int)$_GET['isp']).'].innerHTML=\''.$isp[1].'\';';
 		}
 	}
 	
@@ -114,16 +117,16 @@ $idx6to4 = 0;
 print '<div class="c">';
 print '<h1>';
 	print process_ip($addr, !empty($proxy));
-	if(is_ipv6($addr) && $v4 = v6to4($addr)){
+	if(is_ipv6($addr) && list($tun, $v4) = is_tunnel($addr)){
 		$addr = $v4;
-		print ' <img src="'.SCRIPT_PATH.'other/arrow-s.png" class="in" title="6to4 tunnel destination" /> '.process_ip($addr);
+		print ' <img src="'.SCRIPT_PATH.'other/arrow-s.png" class="in" title="'.$tun.' tunnel destination" /> '.process_ip($addr);
 	}
 	
 	if(!empty($proxy)){
 		print ' <img src="'.SCRIPT_PATH.'other/arrow.png" class="i1" title="X-Forwarded-For" /> '.process_ip($proxy);
-		if(is_ipv6($proxy) && $v4pr = v6to4($proxy)){
+		if(is_ipv6($proxy) && list($tun, $v4pr) = is_tunnel($proxy)){
 			$proxy = $v4pr;
-			print ' <img src="'.SCRIPT_PATH.'other/arrow-s.png" class="in" title="6to4 tunnel destination" /> '.process_ip($proxy);
+			print ' <img src="'.SCRIPT_PATH.'other/arrow-s.png" class="in" title="'.$tun.' tunnel destination" /> '.process_ip($proxy);
 		}
 	}
 print '</h1>';
@@ -217,10 +220,31 @@ function inet6_expand($addr){
     }
 }
 
-function v6to4($addr){
-	if(substr($addr, 0, 5) == '2002:'){
-		$expaddr = inet6_expand($addr);
-		return hexdec(substr($expaddr, 30, 2)).'.'.hexdec(substr($expaddr, 32, 2)).'.'.hexdec(substr($expaddr, 35, 2)).'.'.hexdec(substr($expaddr, 37, 2));
+function is_tunnel($addr){
+	$expaddr = inet6_expand($addr);
+	
+	if(substr($expaddr, 0, 5) == '2002:'){
+		return array('6to4', hexdec(substr($expaddr, 5, 2)).'.'.hexdec(substr($expaddr, 7, 2)).'.'.hexdec(substr($expaddr, 10, 2)).'.'.hexdec(substr($expaddr, 12, 2)));
+	}
+	
+	if(substr($expaddr, 0, 5) == '2001:'){
+		return array('Teredo', hexdec(substr($expaddr, 10, 2)).'.'.hexdec(substr($expaddr, 12, 2)).'.'.hexdec(substr($expaddr, 15, 2)).'.'.hexdec(substr($expaddr, 17, 2)));
+	}
+	
+	if(substr($addr, 0, 8) == '::ffff:'){
+		return array('SIIT', substr($addr, strrpos($addr, ':') + 1));
+	}
+	
+	if(substr($addr, 0, 8) == '64:ff9b:'){
+		return array('NAT64', substr($addr, strrpos($addr, ':') + 1));
+	}
+	
+	if(substr($addr, 0, 5) == 'fe80:'){
+		if(strpos($addr, '.') !== false){
+			return array('ISATAP', substr($addr, strrpos($addr, ':') + 1));
+		} else {
+			return array('ISATAP', hexdec(substr($expaddr, 30, 2)).'.'.hexdec(substr($expaddr, 32, 2)).'.'.hexdec(substr($expaddr, 35, 2)).'.'.hexdec(substr($expaddr, 37, 2)));
+		}
 	}
 }
 
@@ -263,7 +287,7 @@ function is_proxy($addr){
 }
 
 function is_ipv6($addr){
-	if(substr_count($addr, ':') > 0 && substr_count($addr, '.') == 0){
+	if(substr_count($addr, ':') > 0){
 		return '<img src="'.SCRIPT_PATH.'other/ipv6.png" title="IPv6, fuck yeah!" class="i1" /> ';
 	}
 }
