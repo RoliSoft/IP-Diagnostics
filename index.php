@@ -41,8 +41,6 @@ if(!empty($_GET['is_proxy'])){
 	$chip = inet_ntop(base64_decode($_GET['is_proxy']));
 	$ispr = is_proxy_db($chip);
 	
-	//print '/*'.$ispr.'*/';
-	
 	if($ispr == 1){
 		print $prst;
 	} else if($ispr == -1){
@@ -90,6 +88,13 @@ $gia  = geoip_open('geodb/GeoIPASNum.dat', GEOIP_ASNUM_EDITION);
 $gia6 = geoip_open('geodb/GeoIPASNumv6.dat', GEOIP_ASNUM_EDITION_V6);
 
 if((bool)$_GET['6to4'] === true){
+	print '[].concat($(\'.ip\')).pop()[0].parentNode.innerHTML+=\' <span class="s">/</span> '.process_ip($addr, !empty($proxy)).'\';';
+	
+	$host = gethostbyaddrc($addr);
+	if($host == $addr) $uhost = $host = revaddr($addr, true);
+	
+	print '[].concat($(\'.host\')).pop()[0].parentNode.innerHTML+=\' <span class="s">/</span> <span class="host"'.($uhost?' style="color:gray"':'').'>'.$host.'</span>\';';
+	
 	if(isset($_GET['geoip'])){
 		$gip = geoip_record_by_addr($gi, !empty($proxy) && $_GET['geoip'] == 1 ? $proxy : $addr);
 		$ip = $gip->country_name.', '.ucwords2($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.ucwords2($gip->city);
@@ -109,10 +114,14 @@ if((bool)$_GET['6to4'] === true){
 	die();
 }
 
-print '<meta name="HandheldFriendly" content="true" /><meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" /><style>*{margin:0}.c{color:black;font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto}.i1{margin-bottom:-4px}.i2{margin-bottom:-3px}.in{margin-bottom:0px}.ib{margin-bottom:-5px}.ip a{color:black;text-decoration:none}.asnum a{color:lightslategray;text-decoration:none}a:hover{border-bottom:1px dotted black}@media screen and (max-width:800px){h1,h2,h3{font-size:16px !important}h2,h3{font-weight:normal}img{height:21px;width:21px;margin-bottom:-4px !important}}</style><script>function $(a,b){return(b||document).querySelectorAll(a)}</script>';
+print '<meta name="HandheldFriendly" content="true" /><meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" /><style>*{margin:0}.c{color:black;font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto}.s{font-weight:bold}h1.s{font-size:28pt}h2.s{font-size:18pt}.i1{margin-bottom:-4px}.i2{margin-bottom:-3px}.in{margin-bottom:0px}.ib{margin-bottom:-5px}.ip a{color:black;text-decoration:none}.asnum a{color:lightslategray;text-decoration:none}a:hover{border-bottom:1px dotted black}@media screen and (max-width:800px){h1,h2,h3{font-size:16px !important}h2,h3{font-weight:normal}img{height:21px;width:21px;margin-bottom:-4px !important}}</style><script>function $(a,b){return(b||document).querySelectorAll(a)}</script>';
 
 $proxycheck = 0;
 $idx6to4 = 0;
+
+if(is_ipv6($addr)){
+	$scripts = '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.'?6to4=true"></script>';
+}
 
 print '<div class="c">';
 print '<h1>';
@@ -344,14 +353,6 @@ function lookup_ip($addr, $idx = 0){
 	
 	if(empty($ip)){	
 		$ip = ' <img class="flag i1" src="'.SCRIPT_PATH.'browsers/null.png" title="GeoIP lookup failed" /> <span class="geoip"><span style="color:gray">Reserved</span></span>';
-		/*if($v6){
-			$param = '?whois='.urlencode(rtrim(base64_encode(inet_pton($addr)), '='));
-			if(strpos($scripts, $param) !== false){
-				$scripts = str_replace($param, $param.'&geoip='.$idx, $scripts);
-			} else {
-				$scripts .= '<script defer src="'.SCRIPT_PATH.''.$param.'&geoip='.$idx.'"></script>';
-			}
-		}*/
 	}
 	
 	if($v6 && !empty($gip->country_name) && empty($gip->city)){
@@ -421,7 +422,6 @@ function lookup_isp($addr, $idx = 0){
 				$scripts .= '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.'?6to4=true&isp='.$idx.'"></script>';
 			}
 		}
-		//if($v6) $scripts .= '<script defer src="'.SCRIPT_PATH.'?whois='.urlencode(rtrim(base64_encode(inet_pton($addr)), '=')).'&isp='.$idx.'"></script>';
 	}
 	
 	return $isp;
