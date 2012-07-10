@@ -26,18 +26,18 @@ if(!empty($_GET['whois'])){
 	}
 	
 	if(isset($_GET['isp']) && $isp){
-		print '$(\'isp\')['.((int)$_GET['isp']).'].innerHTML=\''.$isp.'\';';
+		print '$(\'#isp\')['.((int)$_GET['isp']).'].innerHTML=\''.$isp.'\';';
 	}
 	
 	if(isset($_GET['geoip']) && $cname){
-		print '$(\'geoip\')['.((int)$_GET['geoip']).'].innerHTML=\''.$cname.'\';var a=$(\'flag\')['.((int)$_GET['geoip']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($country).'.png\';a.title=\''.$cname.'\';document.title=document.title.replace(\'GeoIP: Reserved\', \'GeoIP: '.$cname.'\');';
+		print '$(\'#geoip\')['.((int)$_GET['geoip']).'].innerHTML=\''.$cname.'\';var a=$(\'#flag\')['.((int)$_GET['geoip']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($country).'.png\';a.title=\''.$cname.'\';document.title=document.title.replace(\'GeoIP: Reserved\', \'GeoIP: '.$cname.'\');';
 	}
 	
 	die();
 }
 
 if(!empty($_GET['is_proxy'])){
-	$prst = '$(\'placeholder\')['.((int)$_GET['placeholder']).'].innerHTML=\'<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected" class="i1" /> \';';
+	$prst = '$(\'#placeholder\')['.((int)$_GET['placeholder']).'].innerHTML=\'<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected" class="i1" /> \';';
 	$chip = inet_ntop(base64_decode($_GET['is_proxy']));
 	$ispr = is_proxy_db($chip);
 	
@@ -91,7 +91,7 @@ if((bool)$_GET['6to4'] === true){
 		$gip = geoip_record_by_addr($gi, !empty($proxy) && $_GET['geoip'] == 1 ? $proxy : $addr);
 		$ip = $gip->country_name.', '.ucwords2($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.ucwords2($gip->city);
 		$ip = rtrim($ip, ' ,');
-		print '$(\'geoip\')['.((int)$_GET['geoip']).'].innerHTML=\''.$ip.'\';var a=$(\'flag\')['.((int)$_GET['geoip']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($gip->country_code).'.png\';a.title=\''.$gip->country_name.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
+		print '$(\'#geoip\')['.((int)$_GET['geoip']).'].innerHTML=\''.$ip.'\';var a=$(\'#flag\')['.((int)$_GET['geoip']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($gip->country_code).'.png\';a.title=\''.$gip->country_name.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
 	}
 	
 	if(isset($_GET['isp'])){
@@ -99,14 +99,14 @@ if((bool)$_GET['6to4'] === true){
 		
 		if(!empty($isp)){
 			$isp = explode(' ', $isp, 2);
-			print '$(\'asnum\')['.((int)$_GET['isp']).'].innerHTML=\'<a href="http://bgp.he.net/'.$isp[0].'">'.$isp[0].'</a>\';$(\'isp\')['.((int)$_GET['isp']).'].innerHTML=\''.$isp[1].'\';';
+			print '$(\'#asnum\')['.((int)$_GET['isp']).'].innerHTML=\'<a href="http://bgp.he.net/'.$isp[0].'">'.$isp[0].'</a>\';$(\'#isp\')['.((int)$_GET['isp']).'].innerHTML=\''.$isp[1].'\';';
 		}
 	}
 	
 	die();
 }
 
-print '<meta name="HandheldFriendly" content="true" /><meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" /><style>*{margin:0}.c{color:black;font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto}.i1{margin-bottom:-4px}.i2{margin-bottom:-3px}.in{margin-bottom:0px}.ib{margin-bottom:-5px}.ip a{color:black;text-decoration:none}.asnum a{color:lightslategray;text-decoration:none}a:hover{border-bottom:1px dotted black}@media screen and (max-width:800px){h1,h2,h3{font-size:16px !important}h2,h3{font-weight:normal}img{height:21px;width:21px;margin-bottom:-4px !important}}</style><script>function $(o){return document.getElementsByClassName(o)}</script>';
+print '<meta name="HandheldFriendly" content="true" /><meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" /><style>*{margin:0}.c{color:black;font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto}.i1{margin-bottom:-4px}.i2{margin-bottom:-3px}.in{margin-bottom:0px}.ib{margin-bottom:-5px}.ip a{color:black;text-decoration:none}.asnum a{color:lightslategray;text-decoration:none}a:hover{border-bottom:1px dotted black}@media screen and (max-width:800px){h1,h2,h3{font-size:16px !important}h2,h3{font-weight:normal}img{height:21px;width:21px;margin-bottom:-4px !important}}</style><script>function $(a,b){return(b||document).querySelectorAll(a)}</script>';
 
 $proxycheck = 0;
 $idx6to4 = 0;
