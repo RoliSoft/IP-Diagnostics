@@ -196,7 +196,7 @@ function process_ip($addr, $xfwd = false){
 	}
 	
 	if($pl = is_planetlab($addr)){
-		$ret .= '<img src="'.SCRIPT_PATH.'other/planetlab.jpg" class="planetlab ib" title="PlanetLab proxy" /> ';
+		$ret .= '<img src="'.SCRIPT_PATH.'other/planetlab.png" class="planetlab ib" title="PlanetLab proxy" /> ';
 	}
 	
 	if(!$tr && !$op && !$pl && $xfwd){
