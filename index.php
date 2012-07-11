@@ -1,10 +1,14 @@
 <?php
 header('Content-Type: text/html; charset=UTF-8');
 
-define('DUALSTACK_DOMAIN', 'rolisoft.net');
-define('IPV4_DOMAIN', 'ipv4.rolisoft.net');
-define('IPV6_DOMAIN', 'ipv6.rolisoft.net');
+define('DUALSTACK_DOMAIN', preg_replace('#^ipv[64]\.#', null, $_SERVER['SERVER_NAME']));
+define('IPV4_DOMAIN', 'ipv4.'.DUALSTACK_DOMAIN);
+define('IPV6_DOMAIN', 'ipv6.'.DUALSTACK_DOMAIN);
 define('SCRIPT_PATH', '/browser/');
+
+include 'utils.php';
+include 'services.php';
+include 'tunnelbrokers.php';
 
 if(!empty($_GET['lookup'])){
 	print '<style>*{background:#333;color:white}pre{font-family:Consolas,"Droid Sans Mono","DejaVu Sans Mono","Bitstream Vera Sans Mono","Lucida Console",Monaco,monospace;font-size:11pt}</style>';
@@ -37,25 +41,15 @@ if(!empty($_GET['whois'])){
 }
 
 if(!empty($_GET['is_proxy'])){
-	$prst = '$(\'.placeholder\')['.((int)$_GET['placeholder']).'].innerHTML=\'<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected" class="i1" /> \';';
 	$chip = inet_ntop(base64_decode($_GET['is_proxy']));
-	$ispr = is_proxy_db($chip);
+	$ispr = is_proxy_cached($chip);
+	
+	if($ispr == -1){
+		$ispr = is_proxy_search($chip);
+	}
 	
 	if($ispr == 1){
-		print $prst;
-	} else if($ispr == -1){
-		/*$bing1 = @json_decode(@file_get_contents('http://api.bing.net/json.aspx?AppId=072CCFDBC52FB4552FF96CE87A95F8E9DE30C37B&Query='.urlencode('"'.$chip.'" intitle:proxy').'&Sources=Web&Version=2.0&Market=en-us&Adult=Off&Web.Count=1&Web.Offset=0&Web.Options=DisableHostCollapsing'), true);
-		$bing2 = @json_decode(@file_get_contents('http://api.bing.net/json.aspx?AppId=072CCFDBC52FB4552FF96CE87A95F8E9DE30C37B&Query='.urlencode('"'.$chip.'" intitle:proxies').'&Sources=Web&Version=2.0&Market=en-us&Adult=Off&Web.Count=1&Web.Offset=0&Web.Options=DisableHostCollapsing'), true);
-		$found = $bing1['SearchResponse']['Web']['Total'] != 0 || $bing2['SearchResponse']['Web']['Total'] != 0;*/
-		
-		$google = json_decode(file_get_contents('http://www.google.com/uds/GwebSearch?context=0&lstkp=0&rsz=small&hl=en&source=gsc&gss=.com&sig=22c4e39868158a22aac047a2c138a780&q='.urlencode('"'.$chip.'" intitle:proxy || intitle:proxies').'&gl=www.google.com&qid=12a9cb9d0a6870d28&key=AIzaSyA5m1Nc8ws2BbmPRwKu5gFradvD_hgq6G0&v=1.0'), true);
-		$found = count($google['responseData']['results']) != 0;
-		
-		$db->exec('insert into list values ( '.ip2long($chip).', '.($found?1:0).' )');
-		
-		if($found){
-			print $prst;
-		}
+		print '$(\'.placeholder\')['.((int)$_GET['placeholder']).'].innerHTML=\'<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected" class="i1" /> \';';
 	}
 	
 	die();
@@ -64,10 +58,12 @@ if(!empty($_GET['is_proxy'])){
 //$_SERVER['REMOTE_ADDR'] = '79.119.215.229'; // ipv4
 //$_SERVER['REMOTE_ADDR'] = '2a02:2f02:9020:e0ee:70:e190:c11d:2634'; // ipv6
 //$_SERVER['REMOTE_ADDR'] = '2002:4f77:d7e5::1'; // 6to4
-//$_SERVER['REMOTE_ADDR'] = '2001:0000:4f77:d7e5:8000:63bf:3fff:fdd2'; // teredo
-//$_SERVER['REMOTE_ADDR'] = 'fe80:0000:0000:0000:0200:5efe:4f77:d7e5'; // link-local
+//$_SERVER['REMOTE_ADDR'] = '2001::4136:e378:8000:63bf:3fff:fdd2'; // teredo
+//$_SERVER['REMOTE_ADDR'] = 'fe80::0200:5efe:4f77:d7e5'; // link-local
 //$_SERVER['REMOTE_ADDR'] = '64:ff9b::79.119.215.229'; // nat64
-//$_SERVER['REMOTE_ADDR'] = '2607:f298:1:105::8d8:796c'; // ipv6 us
+//$_SERVER['REMOTE_ADDR'] = '2607:f298:1:105::8d8:796c'; // ipv6 us-dh
+//$_SERVER['REMOTE_ADDR'] = '2001:470:28:744::1'; // ipv6 tunnel
+//$_SERVER['REMOTE_ADDR'] = '2001:388:f000::2d'; // ipv6 tunnel 2
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '69.163.231.16'; // ipv4 proxy
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '2607:f298:1:105::8d8:796c'; // ipv6 proxy
 
@@ -88,16 +84,20 @@ $gia  = geoip_open('geodb/GeoIPASNum.dat', GEOIP_ASNUM_EDITION);
 $gia6 = geoip_open('geodb/GeoIPASNumv6.dat', GEOIP_ASNUM_EDITION_V6);
 
 if((bool)$_GET['6to4'] === true){
+	if(is_ipv6($addr)){
+		die('/* This function can only be accessed from an IPv4-only domain. */');
+	}
+	
 	print '[].concat($(\'.ip\')).pop()[0].parentNode.innerHTML+=\' <span class="s">/</span> '.process_ip($addr, !empty($proxy)).'\';';
 	
-	$host = gethostbyaddrc($addr);
-	if($host == $addr) $uhost = $host = revaddr($addr, true);
+	$host = reverse_lookup($addr);
+	if($host == $addr) $uhost = $host = reverse_address($addr, true);
 	
 	print '[].concat($(\'.host\')).pop()[0].parentNode.innerHTML+=\' <span class="s">/</span> <span class="host"'.($uhost?' style="color:gray"':'').'>'.$host.'</span>\';';
 	
 	if(isset($_GET['geoip'])){
 		$gip = geoip_record_by_addr($gi, !empty($proxy) && $_GET['geoip'] == 1 ? $proxy : $addr);
-		$ip = $gip->country_name.', '.ucwords2($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.ucwords2($gip->city);
+		$ip = $gip->country_name.', '.capitalize_words($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.capitalize_words($gip->city);
 		$ip = rtrim($ip, ' ,');
 		print '$(\'.geoip\')['.((int)$_GET['geoip']).'].innerHTML=\''.$ip.'\';var a=$(\'.flag\')['.((int)$_GET['geoip']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($gip->country_code).'.png\';a.title=\''.$gip->country_name.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
 	}
@@ -141,14 +141,14 @@ print '<h1>';
 print '</h1>';
 
 print '<h2>';
-	$host = gethostbyaddrc($addr);
-	if($host == $addr) $uhost = $host = revaddr($addr, true);
+	$host = reverse_lookup($addr);
+	if($host == $addr) $uhost = $host = reverse_address($addr, true);
 	
 	print '<span class="host"'.($uhost?' style="color:gray"':'').'>'.$host.'</span>';
 	
 	if($proxy){
-		$prhost = gethostbyaddrc($proxy);
-		if($prhost == $proxy) $uprhost = $prhost = revaddr($proxy, true);
+		$prhost = reverse_lookup($proxy);
+		if($prhost == $proxy) $uprhost = $prhost = reverse_address($proxy, true);
 		
 		print ' <img src="'.SCRIPT_PATH.'other/arrow-s.png" class="xforwardedfor i2" title="X-Forwarded-For" /> <span class="host"'.($uprhost?' style="color:gray"':'').'>'.$prhost.'</span>';
 	}
@@ -179,126 +179,41 @@ print $scripts;
 
 geoip_close($gi);
 
-function ucwords2($words){
-    for($i = 0, $max = strlen($words), $next = true; $i < $max; $i++){
-        if(strpos(' -', $words[$i]) !== false){
-            $next = true;
-        } else if($next){
-            $next = false;
-            $words[$i] = strtoupper($words[$i]);
-        }
-    }
-    
-    return $words;
-}
-
-function revaddr($ip, $arpa = false){
-	if(is_ipv6($ip)){
-		$ip = str_replace(':', null, inet6_expand($ip));
-		return implode('.', array_reverse(explode('.', trim(chunk_split($ip, 1, '.'), '.')))).($arpa?'.ip6.arpa':'');
-	} else {
-		return implode('.', array_reverse(explode('.', $ip))).($arpa?'.in-addr.arpa':'');
-	}
-}
-
-function inet6_expand($addr){
-    if (strpos($addr, '::') !== false) {
-        $part = explode('::', $addr);
-        $part[0] = explode(':', $part[0]);
-        $part[1] = explode(':', $part[1]);
-        $missing = array();
-        for ($i = 0; $i < (8 - (count($part[0]) + count($part[1]))); $i++)
-            array_push($missing, '0000');
-        $missing = array_merge($part[0], $missing);
-        $part = array_merge($missing, $part[1]);
-    } else {
-        $part = explode(":", $addr);
-    }
-	
-    foreach ($part as &$p) {
-        while (strlen($p) < 4) $p = '0' . $p;
-    }
-	
-    unset($p);
-    $result = implode(':', $part);
-	
-    if (strlen($result) == 39) {
-        return $result;
-    } else {
-        return false;
-    }
-}
-
-function is_tunnel($addr){
-	$expaddr = inet6_expand($addr);
-	
-	if(substr($expaddr, 0, 5) == '2002:'){
-		return array('6to4', hexdec(substr($expaddr, 5, 2)).'.'.hexdec(substr($expaddr, 7, 2)).'.'.hexdec(substr($expaddr, 10, 2)).'.'.hexdec(substr($expaddr, 12, 2)));
-	}
-	
-	if(substr($expaddr, 0, 5) == '2001:'){
-		return array('Teredo', hexdec(substr($expaddr, 10, 2)).'.'.hexdec(substr($expaddr, 12, 2)).'.'.hexdec(substr($expaddr, 15, 2)).'.'.hexdec(substr($expaddr, 17, 2)));
-	}
-	
-	if(substr($addr, 0, 8) == '::ffff:'){
-		return array('SIIT', substr($addr, strrpos($addr, ':') + 1));
-	}
-	
-	if(substr($addr, 0, 8) == '64:ff9b:'){
-		return array('NAT64', substr($addr, strrpos($addr, ':') + 1));
-	}
-	
-	if(substr($addr, 0, 5) == 'fe80:'){
-		if(strpos($addr, '.') !== false){
-			return array('ISATAP', substr($addr, strrpos($addr, ':') + 1));
-		} else {
-			return array('ISATAP', hexdec(substr($expaddr, 30, 2)).'.'.hexdec(substr($expaddr, 32, 2)).'.'.hexdec(substr($expaddr, 35, 2)).'.'.hexdec(substr($expaddr, 37, 2)));
-		}
-	}
-}
-
 function process_ip($addr, $xfwd = false){
-	$ret .= $v6 = is_ipv6($addr);
-	$ret .= $tr = is_tor($addr);
-	$ret .= $op = is_opturbo($addr);
-	$ret .= $pl = is_planetlab($addr);
-	if(!$tr && !$op && !$pl && $xfwd) $ret .= '<img src="'.SCRIPT_PATH.'other/proxy.png" title="Proxy detected" class="i1" /> ';
-	if(!$tr && !$op && !$pl && !$v6 && !$xfwd) $ret .= ($pr = is_proxy_db($addr)) == 1 ? '<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected" class="i1" /> ' : '';
-	if(!$tr && !$op && !$pl && !$v6 && !$xfwd && $pr == -1) $ret .= is_proxy($addr);
+	$v6 = is_ipv6($addr);
+	
+	if($v6 && $tun = is_tunnel_broker($addr)){
+		if(!isset($tun['icon'])) $tun['icon'] = 'tunnel.png';
+		$ret .= '<img src="'.SCRIPT_PATH.'other/'.$tun['icon'].'" title="'.$tun['name'].' IPv6 tunnel" class="i1" /> ';
+	}
+	
+	if($tr = is_tor($addr)){
+		$ret .= '<img src="'.SCRIPT_PATH.'other/tor.png" title="TOR exit node" class="tor i1" /> ';
+	}
+	
+	if($op = is_opturbo($addr)){
+		$ret .= '<img src="'.SCRIPT_PATH.'other/turbo.png" class="operaturbo ib" title="Opera Turbo proxy" /> ';
+	}
+	
+	if($pl = is_planetlab($addr)){
+		$ret .= '<img src="'.SCRIPT_PATH.'other/planetlab.jpg" class="planetlab ib" title="PlanetLab proxy" /> ';
+	}
+	
+	if(!$tr && !$op && !$pl && $xfwd){
+		$ret .= '<img src="'.SCRIPT_PATH.'other/proxy.png" title="Proxy detected" class="i1" /> ';
+	}
+	
+	if(!$tr && !$op && !$pl && !$v6 && !$xfwd){
+		$ret .= ($pr = is_proxy_cached($addr)) == 1 ? '<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected" class="i1" /> ' : '';
+	}
+	
+	if(!$tr && !$op && !$pl && !$v6 && !$xfwd && $pr == -1){
+		$ret .= is_proxy($addr);
+	}
+	
 	$ret .= '<span class="ip"><a href="'.SCRIPT_PATH.'?lookup='.$addr.'">'.$addr.'</a></span>';
 	
 	return $ret;
-}
-
-function is_tor($addr){
-	if(substr_count($addr, '.') != 0 && gethostbynamec(revaddr($addr).'.'.$_SERVER['SERVER_PORT'].'.'.revaddr($_SERVER['SERVER_ADDR']).'.ip-port.exitlist.torproject.org') == '127.0.0.2'){
-		return '<img src="'.SCRIPT_PATH.'other/tor.png" title="TOR exit node" class="tor i1" /> ';
-	}
-}
-
-function is_opturbo($addr){
-	if(substr(gethostbyaddrc($addr), -15) == '.opera-mini.net'){
-		return '<img src="'.SCRIPT_PATH.'other/turbo.png" class="operaturbo ib" title="Opera Turbo proxy" /> ';
-	}
-}
-
-function is_planetlab($addr){
-	if(preg_match('/^planet(?:lab)?\d+\./i', gethostbyaddrc($addr))){
-		return '<img src="'.SCRIPT_PATH.'other/planetlab.jpg" class="planetlab ib" title="PlanetLab proxy" /> ';
-	}
-}
-
-function is_proxy($addr){
-	global $scripts, $proxycheck;
-	$scripts .= '<script defer src="'.SCRIPT_PATH.'?is_proxy='.urlencode(rtrim(base64_encode(inet_pton($addr)), '=')).'&placeholder='.$proxycheck.'"></script>';
-	$proxycheck++;
-	return '<span class="placeholder"></span>';
-}
-
-function is_ipv6($addr){
-	if(substr_count($addr, ':') > 0){
-		return '<img src="'.SCRIPT_PATH.'other/ipv6.png" title="IPv6, fuck yeah!" class="i1" /> ';
-	}
 }
 
 function lookup_ip($addr, $idx = 0){
@@ -318,7 +233,7 @@ function lookup_ip($addr, $idx = 0){
 		$flag = '<img class="flag i1" src="'.SCRIPT_PATH.'flags/'.strtolower($gip->country_code).'.png" title="'.$gip->country_name.'" /> ';
 	}
 	
-	$ip = $gip->country_name.', '.ucwords2($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.ucwords2($gip->city);
+	$ip = $gip->country_name.', '.capitalize_words($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.capitalize_words($gip->city);
 	$ip = rtrim($ip, ' ,');
 	
 	if(!empty($ip)){
@@ -328,10 +243,10 @@ function lookup_ip($addr, $idx = 0){
 	if(!$s2 && empty($ip)){
 		$s2 = true;
 		
-		$host = gethostbyaddrc($addr);
+		$host = reverse_lookup($addr);
 		
 		if(!$v6){
-			$ip2  = gethostbynamec($host);
+			$ip2  = resolve_host($host);
 		}
 		
 		if(!$v6 && $host != $ip2){
@@ -339,7 +254,7 @@ function lookup_ip($addr, $idx = 0){
 		} else {
 			if(preg_match('/^(?:\w+:\/\/)?[^:?#\/\s]*?([^.\s]+\.(?:[a-z]{2,}|co\.uk|org\.uk|ac\.uk|org\.au|com\.au))(?:[:?#\/]|$)/i', $host, $m)){
 				if($m[1]){
-					$ip2 = gethostbynamec($m[1]);
+					$ip2 = resolve_host($m[1]);
 					
 					if($ip2 != $m[1]){
 						$addr = $ip2;
@@ -388,10 +303,10 @@ function lookup_isp($addr, $idx = 0){
 	if(!$s2 && empty($isp)){
 		$s2 = true;
 		
-		$host = gethostbyaddrc($addr);
+		$host = reverse_lookup($addr);
 		
 		if(!$v6){
-			$ip2  = gethostbynamec($host);
+			$ip2  = resolve_host($host);
 		}
 		
 		if(!$v6 && $host != $ip2){
@@ -399,7 +314,7 @@ function lookup_isp($addr, $idx = 0){
 		} else {
 			if(preg_match('/^(?:\w+:\/\/)?[^:?#\/\s]*?([^.\s]+\.(?:[a-z]{2,}|co\.uk|org\.uk|ac\.uk|org\.au|com\.au))(?:[:?#\/]|$)/i', $host, $m)){
 				if($m[1]){
-					$ip2 = gethostbynamec($m[1]);
+					$ip2 = resolve_host($m[1]);
 					
 					if($ip2 != $m[1]){
 						$addr = $ip2;
@@ -427,56 +342,6 @@ function lookup_isp($addr, $idx = 0){
 	return $isp;
 }
 
-function gethostbyaddrc($addr){
-	global $addrs;
-	
-	if($addrs[$addr]){
-		return $addrs[$addr];
-	}
-	
-	$dns = new Net_DNS2_Resolver(array('nameservers' => array('8.8.8.8', '8.8.4.4')));
-	
-	try {
-		$res = $dns->query($addr, 'PTR');
-	} catch (Net_DNS2_Exception $e) {
-		return $addr;
-	}
-	
-	if(count($res->answer) == 0){
-		return $addr;
-	}
-	
-	return $addrs[$addr] = $res->answer[0]->ptrdname;
-}
-
-function gethostbynamec($host){
-	global $hosts;
-	
-	if($hosts[$host]){
-		return $hosts[$host];
-	}
-	
-	$dns = new Net_DNS2_Resolver(array('nameservers' => array('8.8.8.8', '8.8.4.4')));
-	
-	try {
-		$res = $dns->query($host, 'AAAA');
-	} catch (Net_DNS2_Exception $e) { }
-	
-	if(count($res->answer) == 0){
-		try {
-			$res = $dns->query($host, 'A');
-		} catch (Net_DNS2_Exception $e) {
-			return;
-		}
-	}
-	
-	if(count($res->answer) == 0){
-		return $host;
-	}
-	
-	return $hosts[$host] = $res->answer[0]->address;
-}
-
 function whois($ip) {
     $fp = @fsockopen('whois.lacnic.net', 43, $errno, $errstr, 10) or die("Socket Error " . $errno . " - " . $errstr);
     fputs($fp, $ip."\r\n");
@@ -500,21 +365,5 @@ function whois($ip) {
     }
 	
     return $res;
-}
-
-function is_proxy_db($addr){
-	global $db;
-	
-	if($db == null) $db = new PDO('sqlite:proxy_check.db');
-	
-	$ip = (int)(ip2long($addr));
-	//$db->exec('create table list ( addr integer primary key, type integer )');
-	//$db->exec('insert into list values ( '.ip2long('127.0.0.1').', 0 )');
-	
-	$q = $db->query('select type from list where addr = '.$ip.' limit 1')->fetchObject();
-	
-	if(!$q) return -1;
-	
-	return $q->type;
 }
 ?>
