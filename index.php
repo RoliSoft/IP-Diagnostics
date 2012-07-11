@@ -10,11 +10,6 @@ include 'utils.php';
 include 'services.php';
 include 'tunnelbrokers.php';
 
-if(starts_with($_SERVER['HTTP_USER_AGENT'], 'git/')){
-	header('Location: '.SCRIPT_PATH.'.git/');
-	die();
-}
-
 if(!empty($_GET['lookup'])){
 	print '<style>*{background:#333;color:white}pre{font-family:Consolas,"Droid Sans Mono","DejaVu Sans Mono","Bitstream Vera Sans Mono","Lucida Console",Monaco,monospace;font-size:11pt}</style>';
 	die('<pre>'.htmlspecialchars(@shell_exec('whois -dB '.escapeshellarg($_GET['lookup']))).'</pre>');
