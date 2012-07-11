@@ -6,7 +6,7 @@ function is_tor($addr){
 
 function is_i2p($addr){
 	// https://github.com/hilbix/i2p.to-web/blob/master/header.php#L74
-	return in_array($addr, array('66.111.51.110', '81.169.183.36', '62.75.246.186', '85.25.147.197', '217.160.107.151'));
+	return in_array($addr, array('85.31.186.67' /* false.i2p */, '74.3.165.39' /* outproxyng.h2ik.i2p */, '66.111.51.110' /* i2p.net */, '81.169.183.36', '62.75.246.186', '85.25.147.197', '217.160.107.151'));
 }
 
 function is_opturbo($addr){
