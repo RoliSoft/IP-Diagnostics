@@ -1,6 +1,12 @@
 <?
 function is_tor($addr){
+	// https://www.torproject.org/projects/tordnsel.html.en
 	return substr_count($addr, '.') != 0 && resolve_host(reverse_address($addr).'.'.$_SERVER['SERVER_PORT'].'.'.reverse_address($_SERVER['SERVER_ADDR']).'.ip-port.exitlist.torproject.org') == '127.0.0.2';
+}
+
+function is_i2p($addr){
+	// https://github.com/hilbix/i2p.to-web/blob/master/header.php#L74
+	return in_array($addr, array('66.111.51.110', '81.169.183.36', '62.75.246.186', '85.25.147.197', '217.160.107.151'));
 }
 
 function is_opturbo($addr){

@@ -191,6 +191,10 @@ function process_ip($addr, $xfwd = false){
 		$ret .= '<img src="'.SCRIPT_PATH.'other/tor.png" title="TOR exit node" class="tor i1" /> ';
 	}
 	
+	if(!$tr && $tr = is_i2p($addr)){
+		$ret .= '<img src="'.SCRIPT_PATH.'other/i2p.png" title="I2P outproxy" class="i2p i1" /> ';
+	}
+	
 	if($op = is_opturbo($addr)){
 		$ret .= '<img src="'.SCRIPT_PATH.'other/turbo.png" class="operaturbo ib" title="Opera Turbo proxy" /> ';
 	}
