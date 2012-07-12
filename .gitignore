@@ -1,5 +1,5 @@
 
-/proxy_check.db
+/proxies.db
 /sqlite3.exe
 /geodb/*.dat
 /geodb/*.dat.gz

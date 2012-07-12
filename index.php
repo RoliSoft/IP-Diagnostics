@@ -2,54 +2,43 @@
 header('Content-Type: text/html; charset=UTF-8');
 
 define('DUALSTACK_DOMAIN', preg_replace('#^ipv[64]\.#', null, $_SERVER['SERVER_NAME']));
-define('IPV4_DOMAIN', 'ipv4.'.DUALSTACK_DOMAIN);
-define('IPV6_DOMAIN', 'ipv6.'.DUALSTACK_DOMAIN);
 define('SCRIPT_PATH', '/browser/');
 
+include 'libs/wpua/wp-useragent.php';
+include 'libs/geoip/geoipcity.inc';
+include 'libs/geoip/geoipregionvars.php';
+include 'libs/pear/Net/DNS2.php';
 include 'utils.php';
 include 'services.php';
 include 'tunnelbrokers.php';
 
-if(!empty($_GET['lookup'])){
+if(is_ipv6(DUALSTACK_DOMAIN)){
+	define('IPV4_DOMAIN', resolve_host(reverse_lookup(DUALSTACK_DOMAIN), 'A'));
+	define('IPV6_DOMAIN', DUALSTACK_DOMAIN);
+} else if(is_ipv4(DUALSTACK_DOMAIN)){
+	define('IPV4_DOMAIN', DUALSTACK_DOMAIN);
+	define('IPV6_DOMAIN', resolve_host(reverse_lookup(DUALSTACK_DOMAIN), 'AAAA'));
+} else {
+	define('IPV4_DOMAIN', 'ipv4.'.DUALSTACK_DOMAIN);
+	define('IPV6_DOMAIN', 'ipv6.'.DUALSTACK_DOMAIN);
+}
+
+if(!empty($_GET['l'])){
 	print '<style>*{background:#333;color:white}pre{font-family:Consolas,"Droid Sans Mono","DejaVu Sans Mono","Bitstream Vera Sans Mono","Lucida Console",Monaco,monospace;font-size:11pt}</style>';
-	die('<pre>'.htmlspecialchars(@shell_exec('whois -dB '.escapeshellarg($_GET['lookup']))).'</pre>');
+	die('<pre>'.htmlspecialchars(@shell_exec('whois -dB '.escapeshellarg($_GET['l']))).'</pre>');
 }
 
-if(!empty($_GET['whois'])){
-	$chip  = inet_ntop(base64_decode($_GET['whois']));
-	$whois = @whois($chip);
+if(!empty($_GET['p'])){
+	list($oip, $idx) = explode('@', $_GET['p']);
+	$ip = inet_ntop(base64_decode($oip));
+	$pr = is_proxy_dnsbl($ip);
 	
-	if($whois['country'][0]) $country = $whois['country'][0];
-	if($whois['org-name'][0]) $isp = $whois['org-name'][0];
-	if(!$isp && $whois['orgname'][0]) $isp = $whois['orgname'][0];
-	
-	if($country){
-		include 'libs/geoip/geoip.inc';
-		$gi = new GeoIP();
-		$cname = $gi->GEOIP_COUNTRY_NAMES[$gi->GEOIP_COUNTRY_CODE_TO_NUMBER[strtoupper(trim($country))]];
+	if($pr === null || $pr === false){
+		$pr = is_proxy_google($ip);
 	}
 	
-	if(isset($_GET['isp']) && $isp){
-		print '$(\'.isp\')['.((int)$_GET['isp']).'].innerHTML=\''.$isp.'\';';
-	}
-	
-	if(isset($_GET['geoip']) && $cname){
-		print '$(\'.geoip\')['.((int)$_GET['geoip']).'].innerHTML=\''.$cname.'\';var a=$(\'.flag\')['.((int)$_GET['geoip']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($country).'.png\';a.title=\''.$cname.'\';document.title=document.title.replace(\'GeoIP: Reserved\', \'GeoIP: '.$cname.'\');';
-	}
-	
-	die();
-}
-
-if(!empty($_GET['is_proxy'])){
-	$chip = inet_ntop(base64_decode($_GET['is_proxy']));
-	$ispr = is_proxy_cached($chip);
-	
-	if($ispr == -1){
-		$ispr = is_proxy_search($chip);
-	}
-	
-	if($ispr == 1){
-		print '$(\'.placeholder\')['.((int)$_GET['placeholder']).'].innerHTML=\'<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected" class="i1" /> \';';
+	if($pr !== null && $pr !== false){
+		print '$(\'.placeholder\')['.((int)$idx).'].innerHTML=\'<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected: '.$pr.'" class="i1" /> \';';
 	}
 	
 	die();
@@ -64,6 +53,9 @@ if(!empty($_GET['is_proxy'])){
 //$_SERVER['REMOTE_ADDR'] = '2607:f298:1:105::8d8:796c'; // ipv6 us-dh
 //$_SERVER['REMOTE_ADDR'] = '2001:470:28:744::1'; // ipv6 tunnel
 //$_SERVER['REMOTE_ADDR'] = '2001:388:f000::2d'; // ipv6 tunnel 2
+//$_SERVER['REMOTE_ADDR'] = '89.218.94.166'; // anonymous proxy
+//$_SERVER['REMOTE_ADDR'] = '85.31.186.67'; // i2p
+//$_SERVER['REMOTE_ADDR'] = '94.103.170.236'; // tor
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '69.163.231.16'; // ipv4 proxy
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '2607:f298:1:105::8d8:796c'; // ipv6 proxy
 
@@ -74,16 +66,12 @@ if(!$proxy && $_SERVER['HTTP_VIA'] && preg_match('/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d
 if($_SERVER['HTTP_CLIENT_IP']) $proxy = $_SERVER['HTTP_CLIENT_IP'];
 if($_SERVER['HTTP_X_CODEMUX_CLIENT']) $proxy = $_SERVER['HTTP_X_CODEMUX_CLIENT'];
 
-include 'libs/wpua/wp-useragent.php';
-include 'libs/geoip/geoipcity.inc';
-include 'libs/geoip/geoipregionvars.php';
-include 'libs/pear/Net/DNS2.php';
 $gi   = geoip_open('geodb/GeoLiteCity.dat', GEOIP_STANDARD);
 $gi6  = geoip_open('geodb/GeoLiteCityv6.dat', GEOIP_STANDARD);
 $gia  = geoip_open('geodb/GeoIPASNum.dat', GEOIP_ASNUM_EDITION);
 $gia6 = geoip_open('geodb/GeoIPASNumv6.dat', GEOIP_ASNUM_EDITION_V6);
 
-if((bool)$_GET['6to4'] === true){
+if(isset($_GET['4'])){
 	if(is_ipv6($addr)){
 		die('/* This function can only be accessed from an IPv4-only domain. */');
 	}
@@ -95,19 +83,19 @@ if((bool)$_GET['6to4'] === true){
 	
 	print '[].concat($(\'.host\')).pop()[0].parentNode.innerHTML+=\' <span class="s">/</span> <span class="host"'.($uhost?' style="color:gray"':'').'>'.$host.'</span>\';';
 	
-	if(isset($_GET['geoip'])){
-		$gip = geoip_record_by_addr($gi, !empty($proxy) && $_GET['geoip'] == 1 ? $proxy : $addr);
+	if(isset($_GET['g'])){
+		$gip = geoip_record_by_addr($gi, !empty($proxy) && $_GET['g'] == 1 ? $proxy : $addr);
 		$ip = $gip->country_name.', '.capitalize_words($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.capitalize_words($gip->city);
 		$ip = rtrim($ip, ' ,');
-		print '$(\'.geoip\')['.((int)$_GET['geoip']).'].innerHTML=\''.$ip.'\';var a=$(\'.flag\')['.((int)$_GET['geoip']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($gip->country_code).'.png\';a.title=\''.$gip->country_name.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
+		print '$(\'.geoip\')['.((int)$_GET['g']).'].innerHTML=\''.$ip.'\';var a=$(\'.flag\')['.((int)$_GET['g']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($gip->country_code).'.png\';a.title=\''.$gip->country_name.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
 	}
 	
-	if(isset($_GET['isp'])){
-		$isp = geoip_name_by_addr($gia, !empty($proxy) && $_GET['isp'] == 1 ? $proxy : $addr);
+	if(isset($_GET['i'])){
+		$isp = geoip_name_by_addr($gia, !empty($proxy) && $_GET['i'] == 1 ? $proxy : $addr);
 		
 		if(!empty($isp)){
 			$isp = explode(' ', $isp, 2);
-			print '$(\'.asnum\')['.((int)$_GET['isp']).'].innerHTML=\'<a href="http://bgp.he.net/'.$isp[0].'">'.$isp[0].'</a>\';$(\'.isp\')['.((int)$_GET['isp']).'].innerHTML=\''.$isp[1].'\';';
+			print '$(\'.asnum\')['.((int)$_GET['i']).'].innerHTML=\'<a href="http://bgp.he.net/'.$isp[0].'">'.$isp[0].'</a>\';$(\'.isp\')['.((int)$_GET['i']).'].innerHTML=\''.$isp[1].'\';';
 		}
 	}
 	
@@ -120,7 +108,7 @@ $proxycheck = 0;
 $idx6to4 = 0;
 
 if(is_ipv6($addr)){
-	$scripts = '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.'?6to4=true"></script>';
+	$scripts = '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.'?4"></script>';
 }
 
 print '<div class="c">';
@@ -208,14 +196,18 @@ function process_ip($addr, $xfwd = false){
 	}
 	
 	if(!$tr && !$op && !$pl && !$v6 && !$xfwd){
-		$ret .= ($pr = is_proxy_cached($addr)) == 1 ? '<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected" class="i1" /> ' : '';
+		$pr = is_proxy_cached($addr);
+		
+		if($pr !== null && $pr !== false){
+			$ret .= '<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected: '.$pr.'" class="i1" /> ';
+		}
 	}
 	
-	if(!$tr && !$op && !$pl && !$v6 && !$xfwd && $pr == -1){
+	if(!$tr && !$op && !$pl && !$v6 && !$xfwd && $pr === null){
 		$ret .= is_proxy($addr);
 	}
 	
-	$ret .= '<span class="ip"><a href="'.SCRIPT_PATH.'?lookup='.$addr.'">'.$addr.'</a></span>';
+	$ret .= '<span class="ip"><a href="'.SCRIPT_PATH.'?l='.$addr.'">'.$addr.'</a></span>';
 	
 	return $ret;
 }
@@ -275,11 +267,11 @@ function lookup_ip($addr, $idx = 0){
 	}
 	
 	if($v6 && !empty($gip->country_name) && empty($gip->city)){
-		$param = '?6to4=true';
+		$param = '?4';
 		if(strpos($scripts, $param) !== false){
-			$scripts = str_replace($param, $param.'&geoip='.$idx, $scripts);
+			$scripts = str_replace($param, $param.'&g='.$idx, $scripts);
 		} else {
-			$scripts .= '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.'?6to4=true&geoip='.$idx.'"></script>';
+			$scripts .= '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.'?4&g='.$idx.'"></script>';
 		}
 	}
 	
@@ -334,40 +326,15 @@ function lookup_isp($addr, $idx = 0){
 		$isp = '<span class="asnum"></span> <span class="isp"><span style="color:gray">Unknown ISP</span></span>';
 		
 		if($v6){
-			$param = '?6to4=true';
+			$param = '?4';
 			if(strpos($scripts, $param) !== false){
-				$scripts = str_replace($param, $param.'&isp='.$idx, $scripts);
+				$scripts = str_replace($param, $param.'&i='.$idx, $scripts);
 			} else {
-				$scripts .= '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.'?6to4=true&isp='.$idx.'"></script>';
+				$scripts .= '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.'?4&i='.$idx.'"></script>';
 			}
 		}
 	}
 	
 	return $isp;
-}
-
-function whois($ip) {
-    $fp = @fsockopen('whois.lacnic.net', 43, $errno, $errstr, 10) or die("Socket Error " . $errno . " - " . $errstr);
-    fputs($fp, $ip."\r\n");
-	
-    $out = '';
-    while(!feof($fp)){
-        $out .= fgets($fp);
-    }
-    fclose($fp);
-
-    $res = array();
-    if((strpos(strtolower($out), 'error') === FALSE) && (strpos(strtolower($out), 'not allocated') === FALSE)) {
-        $rows = explode("\n", $out);
-        foreach($rows as $row) {
-            $row = trim($row);
-            if(($row != '') && ($row{0} != '#') && ($row{0} != '%')) {
-                list($key, $value) = explode(':', $row, 2);
-				$res[strtolower($key)][] = trim($value);
-            }
-        }
-    }
-	
-    return $res;
 }
 ?>

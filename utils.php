@@ -1,4 +1,17 @@
 <?
+$hosts = array(
+	'localhost' => array(
+		'DS'   => '::1',
+		'A'    => '127.0.0.1',
+		'AAAA' => '::1'
+	)
+);
+
+$addrs = array(
+	'::1'       => 'localhost',
+	'127.0.0.1' => 'localhost'
+);
+
 function starts_with($haystack, $needle){
 	return stripos($haystack, $needle) === 0;
 }
@@ -96,20 +109,26 @@ function reverse_address($addr, $arpa = false){
 	}
 }
 
-function resolve_host($host){
+function resolve_host($host, $type = 'DS'){
 	global $hosts;
 	
-	if($hosts[$host]){
-		return $hosts[$host];
+	if(isset($hosts[$host][$type])){
+		return $hosts[$host][$type];
 	}
 	
 	$dns = new Net_DNS2_Resolver(array('nameservers' => array('8.8.8.8', '8.8.4.4')));
 	
-	try {
-		$res = $dns->query($host, 'AAAA');
-	} catch (Net_DNS2_Exception $e) { }
+	if($type == 'DS' || $type == 'AAAA'){
+		try {
+			$res = $dns->query($host, 'AAAA');
+		} catch (Net_DNS2_Exception $e) {
+			if($type == 'AAAA'){
+				return;
+			}
+		}
+	}
 	
-	if(count($res->answer) == 0){
+	if($type == 'A' || count($res->answer) == 0){
 		try {
 			$res = $dns->query($host, 'A');
 		} catch (Net_DNS2_Exception $e) {
@@ -121,13 +140,13 @@ function resolve_host($host){
 		return $host;
 	}
 	
-	return $hosts[$host] = $res->answer[0]->address;
+	return $hosts[$host][$type] = $res->answer[0]->address;
 }
 
 function reverse_lookup($addr){
 	global $addrs;
 	
-	if($addrs[$addr]){
+	if(isset($addrs[$addr])){
 		return $addrs[$addr];
 	}
 	
