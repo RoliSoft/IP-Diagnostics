@@ -118,7 +118,7 @@ if(isset($_GET['4'])){
 print '<meta name="HandheldFriendly" content="true" /><meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" /><style>*{margin:0}.c{color:black;font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto}.s{font-weight:bold}h1.s{font-size:28pt}h2.s{font-size:18pt}.i1{margin-bottom:-4px}.i2{margin-bottom:-3px}.in{margin-bottom:0px}.ib{margin-bottom:-5px}.ip a{color:black;text-decoration:none}.asnum a{color:lightslategray;text-decoration:none}a:hover{border-bottom:1px dotted black}@media screen and (max-width:800px){h1,h2,h3{font-size:16px !important}h2,h3{font-weight:normal}img{height:21px;width:21px;margin-bottom:-4px !important}}</style><script>function $(a,b){return(b||document).querySelectorAll(a)}</script>';
 
 if(is_ipv6($addr)){
-	$scripts = '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.'?4"></script>';
+	$v4scripts = '?4';
 }
 
 print '<div class="c">';
@@ -173,7 +173,16 @@ print '</h3>';
 print '</div>';
 
 print '<title>IP: '.$addr.', GeoIP: '.trim(strip_tags($geoip)).'</title>';
-print $scripts;
+
+if($scripts != null){
+	print '<script defer src="'.SCRIPT_PATH.$scripts.'"></script>';
+}
+if($v4scripts != null){
+	print '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.$v4scripts.'"></script>';
+}
+if($v6scripts != null){
+	print '<script defer src="//'.IPV6_DOMAIN.SCRIPT_PATH.$v6scripts.'"></script>';
+}
 
 geoip_close($gi);
 
@@ -233,7 +242,7 @@ function process_ip($addr, $xfwd = false){
 }
 
 function lookup_ip($addr, $idx = 0){
-	global $gi, $gi6, $GEOIP_REGION_NAME, $scripts;
+	global $gi, $gi6, $GEOIP_REGION_NAME, $v4scripts;
 	
 	$v6 = is_ipv6($addr);
 	$s2 = false;
@@ -287,19 +296,18 @@ function lookup_ip($addr, $idx = 0){
 	}
 	
 	if($v6 && !empty($gip->country_name) && empty($gip->city)){
-		$param = '?4';
-		if(strpos($scripts, $param) !== false){
-			$scripts = str_replace($param, $param.'&g='.$idx, $scripts);
-		} else {
-			$scripts .= '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.'?4&g='.$idx.'"></script>';
+		if($v4scripts == null){
+			$v4scripts = '?4';
 		}
+		
+		$v4scripts .= '&g='.$idx;
 	}
 	
 	return $ip;
 }
 
 function lookup_isp($addr, $idx = 0){
-	global $gia, $gia6, $scripts;
+	global $gia, $gia6, $v4scripts;
 	
 	$v6 = is_ipv6($addr);
 	$s2 = false;
@@ -346,12 +354,11 @@ function lookup_isp($addr, $idx = 0){
 		$isp = '<span class="asnum"></span> <span class="isp"><span style="color:gray">Unknown ISP</span></span>';
 		
 		if($v6){
-			$param = '?4';
-			if(strpos($scripts, $param) !== false){
-				$scripts = str_replace($param, $param.'&i='.$idx, $scripts);
-			} else {
-				$scripts .= '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.'?4&i='.$idx.'"></script>';
+			if($v4scripts == null){
+				$v4scripts = '?4';
 			}
+			
+			$v4scripts .= '&i='.$idx;
 		}
 	}
 	

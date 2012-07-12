@@ -84,11 +84,12 @@ function is_planetlab($addr){
 function is_proxy($addr, $idx){
 	global $scripts;
 	
-	$param = '?p';
-	if(strpos($scripts, $param) !== false){
-		$scripts = str_replace($param, $param.'['.$idx.']='.urlencode(rtrim(base64_encode(inet_pton($addr)), '=')).'&p', $scripts);
+	$param = 'p['.$idx.']='.urlencode(rtrim(base64_encode(inet_pton($addr)), '='));
+	
+	if($scripts == null){
+		$scripts = '?'.$param;
 	} else {
-		$scripts .= '<script defer src="'.SCRIPT_PATH.'?p['.$idx.']='.urlencode(rtrim(base64_encode(inet_pton($addr)), '=')).'"></script>';
+		$scripts .= '&'.$param;
 	}
 }
 
