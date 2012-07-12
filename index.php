@@ -29,6 +29,8 @@ if(!empty($_GET['l'])){
 }
 
 if(!empty($_GET['p'])){
+	header('Content-Type: text/javascript; charset=UTF-8');
+	
 	list($oip, $idx) = explode('@', $_GET['p']);
 	$ip = inet_ntop(base64_decode($oip));
 	$pr = is_proxy_dnsbl($ip);
@@ -72,6 +74,8 @@ $gia  = geoip_open('geodb/GeoIPASNum.dat', GEOIP_ASNUM_EDITION);
 $gia6 = geoip_open('geodb/GeoIPASNumv6.dat', GEOIP_ASNUM_EDITION_V6);
 
 if(isset($_GET['4'])){
+	header('Content-Type: text/javascript; charset=UTF-8');
+	
 	if(is_ipv6($addr)){
 		die('/* This function can only be accessed from an IPv4-only domain. */');
 	}
