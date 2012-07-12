@@ -1,9 +1,6 @@
 <?php
 header('Content-Type: text/html; charset=UTF-8');
 
-define('DUALSTACK_DOMAIN', preg_replace('#^ipv[64]\.#', null, $_SERVER['SERVER_NAME']));
-define('SCRIPT_PATH', '/browser/');
-
 include 'libs/wpua/wp-useragent.php';
 include 'libs/geoip/geoipcity.inc';
 include 'libs/geoip/geoipregionvars.php';
@@ -12,35 +9,43 @@ include 'utils.php';
 include 'services.php';
 include 'tunnelbrokers.php';
 
-if(is_ipv6(DUALSTACK_DOMAIN)){
-	define('IPV4_DOMAIN', resolve_host(reverse_lookup(DUALSTACK_DOMAIN), 'A'));
-	define('IPV6_DOMAIN', DUALSTACK_DOMAIN);
-} else if(is_ipv4(DUALSTACK_DOMAIN)){
-	define('IPV4_DOMAIN', DUALSTACK_DOMAIN);
-	define('IPV6_DOMAIN', resolve_host(reverse_lookup(DUALSTACK_DOMAIN), 'AAAA'));
+$servname = preg_replace('#^ipv[64]\.#', null, $_SERVER['SERVER_NAME']);
+if(is_ipv6($servname)){
+	define('DUALSTACK_DOMAIN', '['.$servname.']');
+	define('IPV4_DOMAIN', resolve_host(reverse_lookup($servname), 'A'));
+	define('IPV6_DOMAIN', $servname);
+} else if(is_ipv4($servname)){
+	define('DUALSTACK_DOMAIN', $servname);
+	define('IPV4_DOMAIN', $servname);
+	define('IPV6_DOMAIN', '['.resolve_host(reverse_lookup($servname), 'AAAA').']');
 } else {
-	define('IPV4_DOMAIN', 'ipv4.'.DUALSTACK_DOMAIN);
-	define('IPV6_DOMAIN', 'ipv6.'.DUALSTACK_DOMAIN);
+	define('DUALSTACK_DOMAIN', $servname);
+	define('IPV4_DOMAIN', 'ipv4.'.$servname);
+	define('IPV6_DOMAIN', 'ipv6.'.$servname);
 }
+
+define('SCRIPT_PATH', '/browser/');
 
 if(!empty($_GET['l'])){
 	print '<style>*{background:#333;color:white}pre{font-family:Consolas,"Droid Sans Mono","DejaVu Sans Mono","Bitstream Vera Sans Mono","Lucida Console",Monaco,monospace;font-size:11pt}</style>';
 	die('<pre>'.htmlspecialchars(@shell_exec('whois -dB '.escapeshellarg($_GET['l']))).'</pre>');
 }
 
-if(!empty($_GET['p'])){
+if(!empty($_GET['p']) && is_array($_GET['p'])){
 	header('Content-Type: text/javascript; charset=UTF-8');
 	
-	list($oip, $idx) = explode('@', $_GET['p']);
-	$ip = inet_ntop(base64_decode($oip));
-	$pr = is_proxy_dnsbl($ip);
-	
-	if($pr === null || $pr === false){
-		$pr = is_proxy_google($ip);
-	}
-	
-	if($pr !== null && $pr !== false){
-		print '$(\'.placeholder\')['.((int)$idx).'].innerHTML=\'<img src="//'.DUALSTACK_DOMAIN.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected: '.$pr.'" class="i1" /> \';';
+	foreach($_GET['p'] as $idx => $oip){
+		$ip = inet_ntop(base64_decode($oip));
+		$pr = is_proxy_dnsbl($ip);
+		
+		if($pr === null || $pr === false){
+			$pr = is_proxy_google($ip);
+		}
+		
+		if($pr !== null && $pr !== false){
+			$var = dechex((int)$idx + 10);
+			print 'var '.$var.'=[].concat($(\'.ip\')).pop()['.((int)$idx).'].parentNode;'.$var.'.innerHTML=\'<img src="//'.DUALSTACK_DOMAIN.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected: '.$pr.'" class="i1" /> \'+'.$var.'.innerHTML;';
+		}
 	}
 	
 	die();
@@ -56,10 +61,14 @@ if(!empty($_GET['p'])){
 //$_SERVER['REMOTE_ADDR'] = '2001:470:28:744::1'; // ipv6 tunnel
 //$_SERVER['REMOTE_ADDR'] = '2001:388:f000::2d'; // ipv6 tunnel 2
 //$_SERVER['REMOTE_ADDR'] = '89.218.94.166'; // anonymous proxy
+//$_SERVER['REMOTE_ADDR'] = '173.224.119.174'; // anonymous proxy
+//$_SERVER['REMOTE_ADDR'] = '2002:ade0:77ae::1'; // 6to4 anonymous proxy
 //$_SERVER['REMOTE_ADDR'] = '85.31.186.67'; // i2p
 //$_SERVER['REMOTE_ADDR'] = '94.103.170.236'; // tor
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '69.163.231.16'; // ipv4 proxy
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '2607:f298:1:105::8d8:796c'; // ipv6 proxy
+//$_SERVER['HTTP_X_FORWARDED_FOR'] = '89.218.94.166'; // anonymous proxy
+//$_SERVER['HTTP_X_FORWARDED_FOR'] = '2002:59da:5ea6::1'; // 6to4 anonymous proxy
 
 $addr  = $_SERVER['REMOTE_ADDR'];
 $proxy = $_SERVER['HTTP_X_FORWARDED_FOR'];
@@ -107,9 +116,6 @@ if(isset($_GET['4'])){
 }
 
 print '<meta name="HandheldFriendly" content="true" /><meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" /><style>*{margin:0}.c{color:black;font-family:Cambria;width:100%;height:205px;text-align:center;position:absolute;top:50%;margin:-100px auto 0px auto}.s{font-weight:bold}h1.s{font-size:28pt}h2.s{font-size:18pt}.i1{margin-bottom:-4px}.i2{margin-bottom:-3px}.in{margin-bottom:0px}.ib{margin-bottom:-5px}.ip a{color:black;text-decoration:none}.asnum a{color:lightslategray;text-decoration:none}a:hover{border-bottom:1px dotted black}@media screen and (max-width:800px){h1,h2,h3{font-size:16px !important}h2,h3{font-weight:normal}img{height:21px;width:21px;margin-bottom:-4px !important}}</style><script>function $(a,b){return(b||document).querySelectorAll(a)}</script>';
-
-$proxycheck = 0;
-$idx6to4 = 0;
 
 if(is_ipv6($addr)){
 	$scripts = '<script defer src="//'.IPV4_DOMAIN.SCRIPT_PATH.'?4"></script>';
@@ -172,7 +178,17 @@ print $scripts;
 geoip_close($gi);
 
 function process_ip($addr, $xfwd = false){
+	global $ipidx;
+	
+	if($ipidx === null){
+		$ipidx = 0;
+	} else {
+		$ipidx++;
+	}
+	
 	$v6 = is_ipv6($addr);
+	
+	$ret = '<span>';
 	
 	if($v6 && $tun = is_tunnel_broker($addr)){
 		if(!isset($tun['icon'])) $tun['icon'] = 'tunnel.png';
@@ -199,7 +215,7 @@ function process_ip($addr, $xfwd = false){
 		$ret .= '<img src="'.SCRIPT_PATH.'other/proxy.png" title="Proxy detected" class="i1" /> ';
 	}
 	
-	if(!$tr && !$op && !$pl && !$v6 && !$xfwd){
+	if(!$tr && !$op && !$pl && !$v6){
 		$pr = is_proxy_cached($addr);
 		
 		if($pr !== null && $pr !== false){
@@ -207,11 +223,11 @@ function process_ip($addr, $xfwd = false){
 		}
 	}
 	
-	if(!$tr && !$op && !$pl && !$v6 && !$xfwd && $pr === null){
-		$ret .= is_proxy($addr);
+	if(!$tr && !$op && !$pl && !$v6 && $pr == null){
+		is_proxy($addr, $ipidx);
 	}
 	
-	$ret .= '<span class="ip"><a href="'.SCRIPT_PATH.'?l='.$addr.'">'.$addr.'</a></span>';
+	$ret .= '<span class="ip"><a href="'.SCRIPT_PATH.'?l='.$addr.'">'.$addr.'</a></span></span>';
 	
 	return $ret;
 }

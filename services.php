@@ -81,11 +81,15 @@ function is_planetlab($addr){
 	return (bool)preg_match('/^planet(?:lab)?\d+\./i', reverse_lookup($addr));
 }
 
-function is_proxy($addr){
-	global $scripts, $proxycheck;
-	$scripts .= '<script defer src="'.SCRIPT_PATH.'?p='.urlencode(rtrim(base64_encode(inet_pton($addr)), '=')).'@'.$proxycheck.'"></script>';
-	$proxycheck++;
-	return '<span class="placeholder"></span>';
+function is_proxy($addr, $idx){
+	global $scripts;
+	
+	$param = '?p';
+	if(strpos($scripts, $param) !== false){
+		$scripts = str_replace($param, $param.'['.$idx.']='.urlencode(rtrim(base64_encode(inet_pton($addr)), '=')).'&p', $scripts);
+	} else {
+		$scripts .= '<script defer src="'.SCRIPT_PATH.'?p['.$idx.']='.urlencode(rtrim(base64_encode(inet_pton($addr)), '=')).'"></script>';
+	}
 }
 
 function is_proxy_initdb(){
