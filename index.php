@@ -40,7 +40,7 @@ if(!empty($_GET['p'])){
 	}
 	
 	if($pr !== null && $pr !== false){
-		print '$(\'.placeholder\')['.((int)$idx).'].innerHTML=\'<img src="'.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected: '.$pr.'" class="i1" /> \';';
+		print '$(\'.placeholder\')['.((int)$idx).'].innerHTML=\'<img src="//'.DUALSTACK_DOMAIN.SCRIPT_PATH.'other/proxy.png" title="Anonymous proxy detected: '.$pr.'" class="i1" /> \';';
 	}
 	
 	die();
@@ -91,7 +91,7 @@ if(isset($_GET['4'])){
 		$gip = geoip_record_by_addr($gi, !empty($proxy) && $_GET['g'] == 1 ? $proxy : $addr);
 		$ip = $gip->country_name.', '.capitalize_words($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.capitalize_words($gip->city);
 		$ip = rtrim($ip, ' ,');
-		print '$(\'.geoip\')['.((int)$_GET['g']).'].innerHTML=\''.$ip.'\';var a=$(\'.flag\')['.((int)$_GET['g']).'];a.src=\''.SCRIPT_PATH.'flags/'.strtolower($gip->country_code).'.png\';a.title=\''.$gip->country_name.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
+		print '$(\'.geoip\')['.((int)$_GET['g']).'].innerHTML=\''.$ip.'\';var a=$(\'.flag\')['.((int)$_GET['g']).'];a.src=\'//'.DUALSTACK_DOMAIN.SCRIPT_PATH.'flags/'.strtolower($gip->country_code).'.png\';a.title=\''.$gip->country_name.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
 	}
 	
 	if(isset($_GET['i'])){
