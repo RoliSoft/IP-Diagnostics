@@ -110,6 +110,14 @@ if(isset($_GET['4'])){
 		$alt = $gip->country_name;
 		$cc = strtolower($gip->country_code);
 		
+		if(!empty($ip) && strpos($ip, ',') !== false && $gip->country_code != 'US'){
+			$geo = get_geoname($gip->country_code, $gip->country_name, $GEOIP_REGION_NAME[$gip->country_code][$gip->region], $gip->city);
+			
+			if(!empty($geo)){
+				$ip = $geo;
+			}
+		}
+		
 		if((empty($ip) || strpos($ip, ',') === false) && $li != null){
 			$lip = $li->getAll($addr);
 			
@@ -118,6 +126,14 @@ if(isset($_GET['4'])){
 				$cc = capitalize_words(strtolower($lip->countryLong));
 				$ip = capitalize_words(strtolower($lip->countryLong)).', '.capitalize_words(strtolower($lip->region)).', '.capitalize_words(strtolower($lip->city));
 				$ip = str_replace(', -, ', ', ', rtrim($ip, ' -,'));
+				
+				if(!empty($ip) && strpos($ip, ',') !== false && $lip->countryShort != 'US'){
+					$geo = get_geoname($lip->countryShort, capitalize_words(strtolower($lip->countryLong)), $lip->region, $lip->city);
+					
+					if(!empty($geo)){
+						$ip = $geo;
+					}
+				}
 			}
 		}
 		
