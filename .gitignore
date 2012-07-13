@@ -7,3 +7,6 @@
 /geodb/*.dat.xz
 /geodb/*.rar
 /geodb/*.zip
+/geonames/*.zip
+/geonames/*.txt
+/geonames/*.db

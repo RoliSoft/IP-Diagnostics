@@ -9,6 +9,7 @@ include 'libs/wpua/wp-useragent.php';
 include 'utils.php';
 include 'services.php';
 include 'tunnelbrokers.php';
+include 'geonames.php';
 
 $servname = preg_replace('#^ipv[64]\.#', null, $_SERVER['SERVER_NAME']);
 if(is_ipv6($servname)){
@@ -290,6 +291,14 @@ function lookup_ip($addr, $idx = 0){
 	$ip = $gip->country_name.', '.capitalize_words($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.capitalize_words($gip->city);
 	$ip = str_replace(', , ', ', ', rtrim($ip, ' ,'));
 	
+	if(!empty($ip) && strpos($ip, ',') !== false && $gip->country_code != 'US'){
+		$geo = get_geoname($gip->country_code, $gip->country_name, $GEOIP_REGION_NAME[$gip->country_code][$gip->region], $gip->city);
+		
+		if(!empty($geo)){
+			$ip = $geo;
+		}
+	}
+	
 	if((empty($ip) || (!$v6 && strpos($ip, ',') === false)) && $li != null && $li6 != null){
 		if($v6){
 			$lip = $li6->getAll($addr);
@@ -309,6 +318,14 @@ function lookup_ip($addr, $idx = 0){
 			}
 			
 			$ip = str_replace(', -, ', ', ', rtrim($ip, ' -,'));
+			
+			if(!empty($ip) && strpos($ip, ',') !== false && $lip->countryShort != 'US'){
+				$geo = get_geoname($lip->countryShort, capitalize_words(strtolower($lip->countryLong)), $lip->region, $lip->city);
+				
+				if(!empty($geo)){
+					$ip = $geo;
+				}
+			}
 		}
 	}
 	
