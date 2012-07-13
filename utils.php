@@ -164,4 +164,20 @@ function reverse_lookup($addr){
 	
 	return $addrs[$addr] = $res->answer[0]->ptrdname;
 }
+
+function get_dns_txt($host){
+	$dns = new Net_DNS2_Resolver(array('nameservers' => array('8.8.8.8', '8.8.4.4')));
+	
+	try {
+		$res = $dns->query($host, 'TXT');
+	} catch (Net_DNS2_Exception $e) {
+		return;
+	}
+
+	if(count($res->answer) == 0){
+		return;
+	}
+	
+	return $res->answer[0]->text[0];
+}
 ?>

@@ -1,10 +1,11 @@
 <?php
 header('Content-Type: text/html; charset=UTF-8');
 
-include 'libs/wpua/wp-useragent.php';
+include 'libs/pear/Net/DNS2.php';
 include 'libs/geoip/geoipcity.inc';
 include 'libs/geoip/geoipregionvars.php';
-include 'libs/pear/Net/DNS2.php';
+include 'libs/ip2loc/ip2location.class.php';
+include 'libs/wpua/wp-useragent.php';
 include 'utils.php';
 include 'services.php';
 include 'tunnelbrokers.php';
@@ -63,7 +64,7 @@ if(!empty($_GET['p']) && is_array($_GET['p'])){
 //$_SERVER['REMOTE_ADDR'] = '89.218.94.166'; // anonymous proxy
 //$_SERVER['REMOTE_ADDR'] = '173.224.119.174'; // anonymous proxy
 //$_SERVER['REMOTE_ADDR'] = '2002:ade0:77ae::1'; // 6to4 anonymous proxy
-//$_SERVER['REMOTE_ADDR'] = '85.31.186.67'; // i2p
+$_SERVER['REMOTE_ADDR'] = '85.31.186.67'; // i2p
 //$_SERVER['REMOTE_ADDR'] = '94.103.170.236'; // tor
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '69.163.231.16'; // ipv4 proxy
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '2607:f298:1:105::8d8:796c'; // ipv6 proxy
@@ -81,6 +82,11 @@ $gi   = geoip_open('geodb/GeoLiteCity.dat', GEOIP_STANDARD);
 $gi6  = geoip_open('geodb/GeoLiteCityv6.dat', GEOIP_STANDARD);
 $gia  = geoip_open('geodb/GeoIPASNum.dat', GEOIP_ASNUM_EDITION);
 $gia6 = geoip_open('geodb/GeoIPASNumv6.dat', GEOIP_ASNUM_EDITION_V6);
+
+$li = new ip2location();
+$li->open('geodb/IP-COUNTRY-REGION-CITY-ISP.BIN');
+$li6 = new ip2location();
+$li6->open('geodb/IPV6-COUNTRY.BIN');
 
 if(isset($_GET['4'])){
 	header('Content-Type: text/javascript; charset=UTF-8');
@@ -242,7 +248,7 @@ function process_ip($addr, $xfwd = false){
 }
 
 function lookup_ip($addr, $idx = 0){
-	global $gi, $gi6, $GEOIP_REGION_NAME, $v4scripts;
+	global $gi, $gi6, $li, $li6, $GEOIP_REGION_NAME, $v4scripts;
 	
 	$v6 = is_ipv6($addr);
 	$s2 = false;
@@ -259,12 +265,27 @@ function lookup_ip($addr, $idx = 0){
 	}
 	
 	$ip = $gip->country_name.', '.capitalize_words($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.capitalize_words($gip->city);
-	$ip = rtrim($ip, ' ,');
+	$ip = str_replace(', , ', ', ', rtrim($ip, ' ,'));
+	
+	if((empty($ip) || strpos($ip, ',') === false) && $li != null && $li6 != null){
+		if($v6){
+			$lip = $li6->getAll($addr);
+		} else {
+			$lip = $li->getAll($addr);
+		}
+
+		if(file_exists('flags/'.strtolower($lip->countryShort).'.png')){
+			$flag = '<img class="flag i1" src="'.SCRIPT_PATH.'flags/'.strtolower($lip->countryShort).'.png" title="'.capitalize_words(strtolower($lip->countryLong)).'" /> ';
+		}
+		
+		$ip = capitalize_words(strtolower($lip->countryLong)).', '.capitalize_words(strtolower($lip->region)).', '.capitalize_words(strtolower($lip->city));
+		$ip = str_replace(', , ', ', ', rtrim($ip, ' ,'));
+	}
 	
 	if(!empty($ip)){
 		$ip = $flag.'<span class="geoip">'.$ip.'</span>';
 	}
-	
+
 	if(!$s2 && empty($ip)){
 		$s2 = true;
 		
@@ -319,6 +340,15 @@ function lookup_isp($addr, $idx = 0){
 		$isp = geoip_name_by_addr($gia, $addr);
 	}
 	
+	if(empty($isp)){
+		list($cyas, , $cycc, , ) = explode(' | ', get_dns_txt(reverse_address($addr).'.origin'.($v6?'6':'').'.asn.cymru.com'));
+		list(, , , , $cyisp) = explode(' | ', get_dns_txt('as'.$cyas.'.asn.cymru.com'));
+
+		if(!empty($cyas) && !empty($cyisp)){
+			$isp = 'AS'.$cyas.' '.preg_replace('#^[^\s]+\s#', '', $cyisp);
+		}
+	}
+
 	if(!empty($isp)){
 		$isp = explode(' ', $isp, 2);
 		$isp = '<span class="asnum"><a href="http://bgp.he.net/'.$isp[0].'">'.$isp[0].'</a></span> <span class="isp">'.$isp[1].'</span>';

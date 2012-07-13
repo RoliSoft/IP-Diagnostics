@@ -1,6 +1,7 @@
 
 /proxies.db
 /sqlite3.exe
+/geodb/*.bin
 /geodb/*.dat
 /geodb/*.dat.gz
 /geodb/*.dat.xz
