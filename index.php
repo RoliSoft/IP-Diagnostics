@@ -64,7 +64,7 @@ if(!empty($_GET['p']) && is_array($_GET['p'])){
 //$_SERVER['REMOTE_ADDR'] = '89.218.94.166'; // anonymous proxy
 //$_SERVER['REMOTE_ADDR'] = '173.224.119.174'; // anonymous proxy
 //$_SERVER['REMOTE_ADDR'] = '2002:ade0:77ae::1'; // 6to4 anonymous proxy
-$_SERVER['REMOTE_ADDR'] = '85.31.186.67'; // i2p
+//$_SERVER['REMOTE_ADDR'] = '85.31.186.67'; // i2p
 //$_SERVER['REMOTE_ADDR'] = '94.103.170.236'; // tor
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '69.163.231.16'; // ipv4 proxy
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '2607:f298:1:105::8d8:796c'; // ipv6 proxy
@@ -105,12 +105,35 @@ if(isset($_GET['4'])){
 	if(isset($_GET['g'])){
 		$gip = geoip_record_by_addr($gi, !empty($proxy) && $_GET['g'] == 1 ? $proxy : $addr);
 		$ip = $gip->country_name.', '.capitalize_words($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.capitalize_words($gip->city);
-		$ip = rtrim($ip, ' ,');
-		print '$(\'.geoip\')['.((int)$_GET['g']).'].innerHTML=\''.$ip.'\';var a=$(\'.flag\')['.((int)$_GET['g']).'];a.src=\'//'.DUALSTACK_DOMAIN.SCRIPT_PATH.'flags/'.strtolower($gip->country_code).'.png\';a.title=\''.$gip->country_name.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
+		$ip = str_replace(', , ', ', ', rtrim($ip, ' ,'));
+		$alt = $gip->country_name;
+		$cc = strtolower($gip->country_code);
+		
+		if((empty($ip) || strpos($ip, ',') === false) && $li != null){
+			$lip = $li->getAll($addr);
+			
+			if($lip->ipAddress != 'Invalid IP address.'){
+				$alt = strtolower($lip->countryShort);
+				$cc = capitalize_words(strtolower($lip->countryLong));
+				$ip = capitalize_words(strtolower($lip->countryLong)).', '.capitalize_words(strtolower($lip->region)).', '.capitalize_words(strtolower($lip->city));
+				$ip = str_replace(', -, ', ', ', rtrim($ip, ' -,'));
+			}
+		}
+		
+		print '$(\'.geoip\')['.((int)$_GET['g']).'].innerHTML=\''.$ip.'\';var a=$(\'.flag\')['.((int)$_GET['g']).'];a.src=\'//'.DUALSTACK_DOMAIN.SCRIPT_PATH.'flags/'.$cc.'.png\';a.title=\''.$alt.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
 	}
 	
 	if(isset($_GET['i'])){
 		$isp = geoip_name_by_addr($gia, !empty($proxy) && $_GET['i'] == 1 ? $proxy : $addr);
+		
+		if(empty($isp)){
+			list($cyas, , $cycc, , ) = explode(' | ', get_dns_txt(reverse_address(!empty($proxy) && $_GET['i'] == 1 ? $proxy : $addr).'.origin.asn.cymru.com'));
+			list(, , , , $cyisp) = explode(' | ', get_dns_txt('as'.$cyas.'.asn.cymru.com'));
+			
+			if(!empty($cyas) && !empty($cyisp)){
+				$isp = 'AS'.$cyas.' '.preg_replace('#^[^\s]+\s#', '', $cyisp);
+			}
+		}
 		
 		if(!empty($isp)){
 			$isp = explode(' ', $isp, 2);
@@ -267,19 +290,26 @@ function lookup_ip($addr, $idx = 0){
 	$ip = $gip->country_name.', '.capitalize_words($GEOIP_REGION_NAME[$gip->country_code][$gip->region]).', '.capitalize_words($gip->city);
 	$ip = str_replace(', , ', ', ', rtrim($ip, ' ,'));
 	
-	if((empty($ip) || strpos($ip, ',') === false) && $li != null && $li6 != null){
+	if((empty($ip) || (!$v6 && strpos($ip, ',') === false)) && $li != null && $li6 != null){
 		if($v6){
 			$lip = $li6->getAll($addr);
 		} else {
 			$lip = $li->getAll($addr);
 		}
-
-		if(file_exists('flags/'.strtolower($lip->countryShort).'.png')){
-			$flag = '<img class="flag i1" src="'.SCRIPT_PATH.'flags/'.strtolower($lip->countryShort).'.png" title="'.capitalize_words(strtolower($lip->countryLong)).'" /> ';
-		}
 		
-		$ip = capitalize_words(strtolower($lip->countryLong)).', '.capitalize_words(strtolower($lip->region)).', '.capitalize_words(strtolower($lip->city));
-		$ip = str_replace(', , ', ', ', rtrim($ip, ' ,'));
+		if($lip->ipAddress != 'Invalid IP address.'){
+			if(file_exists('flags/'.strtolower($lip->countryShort).'.png')){
+				$flag = '<img class="flag i1" src="'.SCRIPT_PATH.'flags/'.strtolower($lip->countryShort).'.png" title="'.capitalize_words(strtolower($lip->countryLong)).'" /> ';
+			}
+			
+			$ip = capitalize_words(strtolower($lip->countryLong));
+			
+			if(!$v6){
+				$ip .= ', '.capitalize_words(strtolower($lip->region)).', '.capitalize_words(strtolower($lip->city));
+			}
+			
+			$ip = str_replace(', -, ', ', ', rtrim($ip, ' -,'));
+		}
 	}
 	
 	if(!empty($ip)){

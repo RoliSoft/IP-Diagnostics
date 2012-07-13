@@ -162,7 +162,13 @@ function reverse_lookup($addr){
 		return $addr;
 	}
 	
-	return $addrs[$addr] = $res->answer[0]->ptrdname;
+	if(get_class($res->answer[0]) == 'Net_DNS2_RR_PTR'){
+		return $addrs[$addr] = $res->answer[0]->ptrdname;
+	} else if(get_class($res->answer[0]) == 'Net_DNS2_RR_CNAME') {
+		return $addrs[$addr] = $res->answer[0]->cname;
+	} else {
+		return $addr;
+	}
 }
 
 function get_dns_txt($host){
