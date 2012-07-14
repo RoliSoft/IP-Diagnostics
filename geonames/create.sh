@@ -4,9 +4,10 @@ wget http://download.geonames.org/export/dump/alternateNames.zip
 wget http://download.geonames.org/export/dump/allCountries.zip
 unzip alternateNames.zip
 unzip allCountries.zip
-sqlite3 geonames.db < geonames.sql
+sqlite3 geonames.db < geonames-fts4.sql
 rm allCountries.zip
 rm allCountries.txt
+rm alternateNames.zip
 rm alternateNames.txt
 rm iso-languagecodes.txt
 rm admin1CodesASCII.txt
