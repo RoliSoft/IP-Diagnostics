@@ -53,6 +53,25 @@ function capitalize_words($words){
     return $words;
 }
 
+function queryToObject($db, $sql, $params = null){
+	if($params != null){
+		$q = $db->prepare($sql);
+		$q->execute($params);
+		return $q->fetchObject();
+	} else {
+		return $db->query($sql)->fetchObject();
+	}
+}
+
+function execQuery($db, $sql, $params = null){
+	if($params != null){
+		$q = $db->prepare($sql);
+		return $q->execute($params);
+	} else {
+		return $db->exec($sql);
+	}
+}
+
 function is_ipv4($addr){
 	return filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false;
 }

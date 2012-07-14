@@ -101,11 +101,11 @@ function is_proxy_initdb(){
 		$proxydb = new PDO('sqlite:proxies.db');
 		
 		if($init){
-			$proxydb->exec('create table list ( addr blob(16), type integer, date integer, reason string )');
-			$proxydb->prepare('insert into list values ( ?, ?, ?, ? )')->execute(array(inet_pton('127.0.0.1'), 0, pow(2, 32) - 2, null));
-			$proxydb->prepare('insert into list values ( ?, ?, ?, ? )')->execute(array(inet_pton('::1'), 0, pow(2, 32) - 2, null));
+			execQuery($proxydb, 'create table list ( addr blob(16), type integer, date integer, reason string )');
+			execQuery($proxydb, 'insert into list values ( ?, ?, ?, ? )', array(inet_pton('127.0.0.1'), 0, pow(2, 32) - 2, null));
+			execQuery($proxydb, 'insert into list values ( ?, ?, ?, ? )', array(inet_pton('::1'), 0, pow(2, 32) - 2, null));
 		} else {
-			$proxydb->exec('delete from list where '.time().' - date > 259200');
+			execQuery($proxydb, 'delete from list where '.time().' - date > 259200');
 		}
 	}
 }
@@ -114,12 +114,10 @@ function is_proxy_cached($addr){
 	global $proxydb;
 	is_proxy_initdb();
 	
-	$q = $proxydb->prepare('select type, reason from list where addr = ? limit 1');
-	$q->execute(array(inet_pton($addr)));
-	$r = $q->fetchObject();
+	$r = queryToObject($proxydb, 'select type, reason from list where addr = ? limit 1', array(inet_pton($addr)));
 	
-	if($r == false){
-		return null;
+	if($r == null){
+		return;
 	}
 	
 	return $r->type == 0 ? false : $r->reason;
@@ -169,7 +167,7 @@ function is_proxy_dnsbl($addr){
 		}
 	}
 	
-	$proxydb->prepare('insert into list values ( ?, ?, ?, ? )')->execute(array(inet_pton($addr), isset($reason) ? 1 : 0, time(), isset($reason) ? $reason : null));
+	execQuery($proxydb, 'insert into list values ( ?, ?, ?, ? )', array(inet_pton($addr), isset($reason) ? 1 : 0, time(), isset($reason) ? $reason : null));
 	
 	return isset($reason) ? $reason : false;
 }
@@ -197,7 +195,7 @@ function is_proxy_google($addr){
 		$reason .= 'and so on...';
 	}
 	
-	$proxydb->prepare('insert into list values ( ?, ?, ?, ? )')->execute(array(inet_pton($addr), $found ? 1 : 0, time(), $found ? $reason : null));
+	execQuery($proxydb, 'insert into list values ( ?, ?, ?, ? )', array(inet_pton($addr), $found ? 1 : 0, time(), $found ? $reason : null));
 	
 	return $found ? $reason : false;
 }
