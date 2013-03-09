@@ -19,6 +19,10 @@ if(is_ipv6($servname)){
 	define('DUALSTACK_DOMAIN', $servname);
 	define('IPV4_DOMAIN', $servname);
 	define('IPV6_DOMAIN', '['.resolve_host(reverse_lookup($servname), 'AAAA').']');
+} else if(resolve_host('ipv4.'.$servname, 'A') != null && resolve_host('ipv6.'.$servname, 'AAAA') != null) {
+	define('DUALSTACK_DOMAIN', $servname);
+	define('IPV4_DOMAIN', 'ipv4.'.$servname);
+	define('IPV6_DOMAIN', 'ipv6.'.$servname);
 } else {
 	define('DUALSTACK_DOMAIN', $servname);
 	define('IPV4_DOMAIN', resolve_host($servname, 'A'));
@@ -53,6 +57,7 @@ if(!empty($_GET['p']) && is_array($_GET['p'])){
 }
 
 //$_SERVER['REMOTE_ADDR'] = '79.119.215.229'; // ipv4
+$_SERVER['REMOTE_ADDR'] = '5.15.215.76'; // ipv4 #2
 //$_SERVER['REMOTE_ADDR'] = '2a02:2f02:9020:e0ee:70:e190:c11d:2634'; // ipv6
 //$_SERVER['REMOTE_ADDR'] = '2002:4f77:d7e5::1'; // 6to4
 //$_SERVER['REMOTE_ADDR'] = '2001::4136:e378:8000:63bf:3fff:fdd2'; // teredo
