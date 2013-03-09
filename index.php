@@ -21,15 +21,15 @@ if(is_ipv6($servname)){
 	define('IPV6_DOMAIN', '['.resolve_host(reverse_lookup($servname), 'AAAA').']');
 } else {
 	define('DUALSTACK_DOMAIN', $servname);
-	define('IPV4_DOMAIN', 'ipv4.'.$servname);
-	define('IPV6_DOMAIN', 'ipv6.'.$servname);
+	define('IPV4_DOMAIN', resolve_host($servname, 'A'));
+	define('IPV6_DOMAIN', '['.resolve_host($servname, 'AAAA').']');
 }
 
 define('SCRIPT_PATH', '/browser/');
 
 if(!empty($_GET['l'])){
 	print '<style>*{background:#333;color:white}pre{font-family:Consolas,"Droid Sans Mono","DejaVu Sans Mono","Bitstream Vera Sans Mono","Lucida Console",Monaco,monospace;font-size:11pt}</style>';
-	die('<pre>'.htmlspecialchars(@shell_exec('whois -dB '.escapeshellarg($_GET['l']))).'</pre>');
+	die('<pre>'.htmlspecialchars(@shell_exec('whois -dBh 193.0.6.135 '.escapeshellarg($_GET['l']))).'</pre>');
 }
 
 if(!empty($_GET['p']) && is_array($_GET['p'])){
@@ -66,6 +66,8 @@ if(!empty($_GET['p']) && is_array($_GET['p'])){
 //$_SERVER['REMOTE_ADDR'] = '2002:ade0:77ae::1'; // 6to4 anonymous proxy
 //$_SERVER['REMOTE_ADDR'] = '85.31.186.67'; // i2p
 //$_SERVER['REMOTE_ADDR'] = '94.103.170.236'; // tor
+//$_SERVER['REMOTE_ADDR'] = '193.16.218.72'; // orgtest
+//$_SERVER['REMOTE_ADDR'] = '80.96.11.100'; // orgtest
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '69.163.231.16'; // ipv4 proxy
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '2607:f298:1:105::8d8:796c'; // ipv6 proxy
 //$_SERVER['HTTP_X_FORWARDED_FOR'] = '89.218.94.166'; // anonymous proxy
@@ -82,6 +84,7 @@ $gi   = geoip_open('geodb/GeoLiteCity.dat', GEOIP_STANDARD);
 $gi6  = geoip_open('geodb/GeoLiteCityv6.dat', GEOIP_STANDARD);
 $gia  = geoip_open('geodb/GeoIPASNum.dat', GEOIP_ASNUM_EDITION);
 $gia6 = geoip_open('geodb/GeoIPASNumv6.dat', GEOIP_ASNUM_EDITION_V6);
+$gio  = geoip_open('geodb/GeoIPOrg.dat', GEOIP_STANDARD);
 
 $li = new ip2location();
 $li->open('geodb/IP-COUNTRY-REGION-CITY-ISP.BIN');
@@ -95,7 +98,7 @@ if(isset($_GET['4'])){
 		die('/* This function can only be accessed from an IPv4-only domain. */');
 	}
 	
-	print '[].concat($(\'.ip\')).pop()[0].parentNode.innerHTML+=\' <span class="s">/</span> '.process_ip($addr, !empty($proxy)).'\';';
+	print '[].concat($(\'.ip\')).pop()[0].parentNode.innerHTML+=\' <span class="s">/</span> '.process_ip($addr, !empty($proxy)).'\';document.title=document.title.replace(/, GeoIP: /, \' / '.$addr.', GeoIP: \');';
 	
 	$host = reverse_lookup($addr);
 	if($host == $addr) $uhost = $host = reverse_address($addr, true);
@@ -120,11 +123,37 @@ if(isset($_GET['4'])){
 			}
 		}
 		
-		print '$(\'.geoip\')['.((int)$_GET['g']).'].innerHTML=\''.$ip.'\';var a=$(\'.flag\')['.((int)$_GET['g']).'];a.src=\'//'.DUALSTACK_DOMAIN.SCRIPT_PATH.'flags/'.$cc.'.png\';a.title=\''.$alt.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
+		if($alt == '-'){
+			$alt = 'GeoIP lookup failed';
+		}
+		if(empty($cc) || $cc == '-'){
+			$cc = 'browsers/null';
+		} else {
+			$cc = 'flags/'.$cc;
+		}
+		if(empty($ip)){
+			$gr = true;
+			$ip = 'Reserved';
+			
+			if(!$v6){
+				$ip = resolve_reserved(!empty($proxy) && $_GET['g'] == 1 ? $proxy : $addr);
+			}
+		}
+		
+		print '$(\'.geoip\')['.((int)$_GET['g']).'].innerHTML=\''.($gr?'<span style="color:gray">':'').$ip.($gr?'</span>':'').'\';var a=$(\'.flag\')['.((int)$_GET['g']).'];a.src=\'//'.DUALSTACK_DOMAIN.SCRIPT_PATH.$cc.'.png\';a.title=\''.$alt.'\';document.title=document.title.replace(/GeoIP: [^$]+/, \'GeoIP: '.$ip.'\');';
 	}
 	
 	if(isset($_GET['i'])){
 		$isp = geoip_name_by_addr($gia, !empty($proxy) && $_GET['i'] == 1 ? $proxy : $addr);
+		$org = geoip_name_by_addr($gio, !empty($proxy) && $_GET['i'] == 1 ? $proxy : $addr);
+		
+		if(empty($org)){
+			$org = $li->getIsp(!empty($proxy) && $_GET['i'] == 1 ? $proxy : $addr);
+			
+			if(!empty($org)){
+				$org = capitalize_words(strtolower($org));
+			}
+		}
 		
 		if(empty($isp)){
 			list($cyas, , $cycc, , ) = explode(' | ', get_dns_txt(reverse_address(!empty($proxy) && $_GET['i'] == 1 ? $proxy : $addr).'.origin.asn.cymru.com'));
@@ -137,6 +166,11 @@ if(isset($_GET['4'])){
 		
 		if(!empty($isp)){
 			$isp = explode(' ', $isp, 2);
+			
+			if(!empty($org)){
+				$isp[1] = $org;
+			}
+			
 			print '$(\'.asnum\')['.((int)$_GET['i']).'].innerHTML=\'<a href="http://bgp.he.net/'.$isp[0].'">'.$isp[0].'</a>\';$(\'.isp\')['.((int)$_GET['i']).'].innerHTML=\''.$isp[1].'\';';
 		}
 	}
@@ -197,7 +231,7 @@ print '</h2><br />';
 print '<h3>';
 	print detect_platform();
 	print detect_webbrowser();
-	print $_SERVER['HTTP_USER_AGENT'];
+	print htmlspecialchars($_SERVER['HTTP_USER_AGENT']);
 print '</h3>';
 print '</div>';
 
@@ -212,8 +246,6 @@ if($v4scripts != null){
 if($v6scripts != null){
 	print '<script defer src="//'.IPV6_DOMAIN.SCRIPT_PATH.$v6scripts.'"></script>';
 }
-
-geoip_close($gi);
 
 function process_ip($addr, $xfwd = false){
 	global $ipidx;
@@ -342,11 +374,17 @@ function lookup_ip($addr, $idx = 0){
 		goto lookup;
 	}
 	
-	if(empty($ip)){	
-		$ip = ' <img class="flag i1" src="'.SCRIPT_PATH.'browsers/null.png" title="GeoIP lookup failed" /> <span class="geoip"><span style="color:gray">Reserved</span></span>';
+	if(empty($ip)){
+		if($v6){
+			$ip = 'Reserved';
+		} else {
+			$ip = resolve_reserved($addr);
+		}
+		
+		$ip = ' <img class="flag i1" src="'.SCRIPT_PATH.'browsers/null.png" title="GeoIP lookup failed" /> <span class="geoip"><span style="color:gray">'.$ip.'</span></span>';
 	}
 	
-	if($v6 && !empty($gip->country_name) && empty($gip->city)){
+	if($v6 && /*!empty($gip->country_name) &&*/ empty($gip->city)){
 		if($v4scripts == null){
 			$v4scripts = '?4';
 		}
@@ -358,7 +396,7 @@ function lookup_ip($addr, $idx = 0){
 }
 
 function lookup_isp($addr, $idx = 0){
-	global $gia, $gia6, $v4scripts;
+	global $gia, $gia6, $gio, $li, $v4scripts;
 	
 	$v6 = is_ipv6($addr);
 	$s2 = false;
@@ -366,8 +404,18 @@ function lookup_isp($addr, $idx = 0){
    lookup:
 	if($v6){
 		$isp = geoip_name_by_addr_v6($gia6, $addr);
+		$org = null;
 	} else {
 		$isp = geoip_name_by_addr($gia, $addr);
+		$org = geoip_name_by_addr($gio, $addr);
+		
+		if(empty($org)){
+			$org = $li->getIsp($addr);
+			
+			if(!empty($org)){
+				$org = capitalize_words(strtolower($org));
+			}
+		}
 	}
 	
 	if(empty($isp)){
@@ -381,6 +429,11 @@ function lookup_isp($addr, $idx = 0){
 
 	if(!empty($isp)){
 		$isp = explode(' ', $isp, 2);
+		
+		if(!empty($org)){
+			$isp[1] = $org;
+		}
+		
 		$isp = '<span class="asnum"><a href="http://bgp.he.net/'.$isp[0].'">'.$isp[0].'</a></span> <span class="isp">'.$isp[1].'</span>';
 	}
 	

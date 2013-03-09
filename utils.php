@@ -12,6 +12,24 @@ $addrs = array(
 	'127.0.0.1' => 'localhost'
 );
 
+$bogons = array(
+	// http://tools.ietf.org/html/rfc3330#section-3
+	'0.0.0.0/8' => 'Local Network',
+	'10.0.0.0/8' => 'Private-Use Network',
+	'14.0.0.0/8' => 'Public-Data Network',
+	'24.0.0.0/8' => 'Cable Television Network',
+	'127.0.0.0/8' => 'Loopback Interface',
+	'169.254.0.0/16' => 'Link-Local Network',
+	'172.16.0.0/12' => 'Private-Use Network',
+	'192.0.2.0/24' => 'Test-Net',
+	'192.88.99.0/24' => '6to4 Relay Anycast',
+	'192.168.0.0/16' => 'Private-Use Network',
+	'198.18.0.0/15' => 'Network Interconnect Device Benchmarking',
+	'224.0.0.0/4' => 'Multicast Network',
+	'240.0.0.0/4' => 'Reserved for Future Use',
+	'255.255.255.255/32' => 'Limited Broadcast Network',
+);
+
 function starts_with($haystack, $needle){
 	return stripos($haystack, $needle) === 0;
 }
@@ -204,5 +222,69 @@ function get_dns_txt($host){
 	}
 	
 	return $res->answer[0]->text[0];
+}
+
+function ip_in_range($ip, $range){
+	if (strpos($range, '/') !== false)
+	{
+		list($range, $netmask) = explode('/', $range, 2);
+		if (strpos($netmask, '.') !== false)
+		{
+			$netmask = str_replace('*', '0', $netmask);
+			$netmask_dec = ip2long($netmask);
+			return ((ip2long($ip) & $netmask_dec) == (ip2long($range) & $netmask_dec));
+		}
+		else
+		{
+			$x = explode('.', $range);
+			while (count($x) < 4) $x[] = '0';
+			list($a, $b, $c, $d) = $x;
+			$range = sprintf("%u.%u.%u.%u", empty($a) ? '0' : $a, empty($b) ? '0' : $b, empty($c) ? '0' : $c, empty($d) ? '0' : $d);
+			$range_dec = ip2long($range);
+			$ip_dec = ip2long($ip);
+
+			#Strategy 1 - Create the netmask with 'netmask' 1s and then fill it to 32 with 0s
+			#$netmask_dec = bindec(str_pad('', $netmask, '1').str_pad('', 32 - $netmask, '0'));
+
+			#Strategy 2 - Use math to create it
+			$wildcard_dec = pow(2, (32 - $netmask)) - 1;
+			$netmask_dec = ~$wildcard_dec;
+
+			return (($ip_dec & $netmask_dec) == ($range_dec & $netmask_dec));
+		}
+	}
+	else
+	{
+		if (strpos($range, '*') !== false)
+		{
+			$lower = str_replace('*', '0', $range);
+			$upper = str_replace('*', '255', $range);
+			$range = "$lower-$upper";
+		}
+
+		if (strpos($range, '-') !== false)
+		{
+			list($lower, $upper) = explode('-', $range, 2);
+			$lower_dec = (float) sprintf("%u", ip2long($lower));
+			$upper_dec = (float) sprintf("%u", ip2long($upper));
+			$ip_dec = (float) sprintf("%u", ip2long($ip));
+			return (($ip_dec >= $lower_dec) && ($ip_dec <= $upper_dec));
+		}
+
+		//echo "\r\n\r\nRange argument $range is not in 1.2.3.4/24 or 1.2.3.4/255.255.255.0 format\r\n\r\n";
+		return false;
+	}
+}
+
+function resolve_reserved($addr){
+	global $bogons;
+	
+	foreach($bogons as $range => $name){
+		if(ip_in_range($addr, $range)){
+			return $name;
+		}
+	}
+	
+	return 'Reserved';
 }
 ?>
