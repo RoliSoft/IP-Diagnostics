@@ -23,7 +23,7 @@ If you have a dynamic IP address you've probably been in the situation where you
     *   The IP address will be checked against all proxy-listing websites (via a nicely crafted Google and Bing query)
 *   Identification of your operating system, device and/or browser &ndash; icons and logic were borrowed from [wp-useragent](http://wordpress.org/extend/plugins/wp-useragent/)
 
-tl;dr: Goes NCIS on your ass.
+tl;dr: Goes NSA on your ass.
 
 ## Use it in your scripts
 
@@ -52,7 +52,7 @@ UPDATE: You'll have to go back a few commits, because I've removed these files. 
 
 The source code is available via git. You are welcome to install it on your server then fix things that aren't broken:
 
-	git clone http://rolisoft.net/browser/.git/
+	git clone https://github.com/RoliSoft/IP-Diagnostics.git
 
 Once you've checked it out, you'll need the free MaxMind databases. I wrote a script to take care of that for you:
 
